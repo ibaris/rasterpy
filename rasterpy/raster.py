@@ -13,7 +13,8 @@ if sys.version_info < (3, 0):
 else:
     srange = range
 
-class Raster(object):
+
+class Raster:
     """
     Import a binary file of ENVI or PolSARpro or a tif to a raster object.
 
@@ -142,12 +143,12 @@ class Raster(object):
             self.projection = tuple(map(lambda items: items.GetProjection(), inds))
             self.srs = tuple(map(lambda items: osr.SpatialReference(wkt=items), self.projection))
 
-            self.transform = tuple(map(lambda items: items.GetGeoTransform(), inds))
+            self.geotransform = tuple(map(lambda items: items.GetGeoTransform(), inds))
 
-            self.xmin = tuple(map(lambda items: items[0], self.transform))
-            self.ymin = tuple(map(lambda items: items[3], self.transform))
-            self.xres = tuple(map(lambda items: items[1], self.transform))
-            self.yres = tuple(map(lambda items: items[5], self.transform))
+            self.xmin = tuple(map(lambda items: items[0], self.geotransform))
+            self.ymin = tuple(map(lambda items: items[3], self.geotransform))
+            self.xres = tuple(map(lambda items: items[1], self.geotransform))
+            self.yres = tuple(map(lambda items: items[5], self.geotransform))
 
             self.nodata = tuple(map(lambda items: items.GetRasterBand(1).GetNoDataValue(), inds))
 
@@ -182,12 +183,12 @@ class Raster(object):
             self.projection = inds.GetProjection()
             # self.srs = osr.SpatialReference(wkt=inds)
 
-            self.transform = inds.GetGeoTransform()
+            self.geotransform = inds.GetGeoTransform()
 
-            self.xmin = self.transform[0]
-            self.ymin = self.transform[3]
-            self.xres = self.transform[1]
-            self.yres = self.transform[5]
+            self.xmin = self.geotransform[0]
+            self.ymin = self.geotransform[3]
+            self.xres = self.geotransform[1]
+            self.yres = self.geotransform[5]
 
             self.nodata = inds.GetRasterBand(1).GetNoDataValue()
 
@@ -279,7 +280,7 @@ class Raster(object):
                     temp = self.array[i].flatten()
                     array.append(temp)
 
-                self.array = array
+                self.array = tuple(array)
 
             for item in self.filename:
                 print ("File {0} opened successfully".format(str(item)))
@@ -321,7 +322,7 @@ class Raster(object):
                 temp = self.array[i].reshape((self.rows[i], self.cols[i]))
                 array.append(temp)
 
-            self.array = array
+            self.array = tuple(array)
 
         else:
             self.array = self.array.reshape((self.rows, self.cols))
@@ -347,7 +348,183 @@ class Raster(object):
                 temp = self.array[i].flatten()
                 array.append(temp)
 
-            self.array = array
+            self.array = tuple(array)
 
         else:
             self.array = self.array.flatten()
+
+    def set_nodata(self, nodata):
+        """
+        Set and assign new no data value.
+
+        Parameters
+        ----------
+        nodata : int, float or np.nan
+            New no data value
+
+        Returns
+        -------
+        None
+
+        """
+        try:
+            self.array
+        except AttributeError:
+            raise AssertionError(
+                "Before you can assign a new no data value must convert the data to an array with Raster.to_array().")
+
+        if isinstance(self.raster, tuple):
+            nodata_list = []
+            for i in range(len(self.array)):
+                nodata_list.append(nodata)
+
+            self.nodata = tuple(nodata_list)
+
+            for i in srange(len(self.array)):
+                self.array[i][np.isnan(self.array[i])] = self.nodata[i]
+
+        else:
+            self.nodata = nodata
+            self.array[np.isnan(self.array)] = self.nodata
+
+    def to_grid(self, data, filename, path=None, export='all', band=1, reference=0):
+        """
+        Convert an array into a binary (.bin) file with header (.hdr) or a Tif file.
+
+        Parameters
+        ----------
+        data : array_like or tuple with array_like
+            Arrays you want to export.
+        filename : str or tuple with str
+            File names of the exported arrays. Supported file extension are '.tif' or '.bin'
+        path : str, optional
+            Export path. If path is None the path will set to current
+            directory with os.getwd().
+        export : int or 'all', optional
+            If data is tuple instance you can specify which tuple item you want to export. If 'all' (default) all items
+            will be exported. In this case filename must have the same len as data.
+        band : int
+            Write the data in a specific band.
+        reference :
+            If the Raster import contains several grids, you can specify which of these grids you want to use as
+            reference for geospatial information (default=0).
+
+        Returns
+        -------
+        Grid as .tif or .bin
+        """
+        if path is not None:
+            os.chdir(path)
+        else:
+            pass
+
+        if isinstance(data, tuple):
+            if export == 'all':
+                if not isinstance(filename, tuple) or len(filename) != len(data):
+                    raise AssertionError(
+                        "If you want to export all arrays you need as much as filnames in a tuple as arrays.")
+
+                for i in srange(len(data)):
+                    data_ = data[i]
+                    if data_.ndim <= 1:
+                        raise AssertionError("Only 2 dimensional array can be converted into a .tiff file.")
+                    rows, cols = data_.shape
+                    bands = band
+                    gdal_dtype = self.__TYPEMAP[data_.dtype.name]
+                    origin_x = self.xmin[reference] if isinstance(self.xmin, tuple) else self.xmin
+                    origin_y = self.ymin[reference] if isinstance(self.ymin, tuple) else self.ymin
+
+                    filename_temp = filename[i].split('.')
+
+                    if filename_temp[-1] == 'tif':
+                        outdriver = gdal.GetDriverByName("GTiff")
+                    elif filename_temp[-1] == 'bin':
+                        outdriver = gdal.GetDriverByName('ENVI')
+                    else:
+                        raise AssertionError("File extension must be `tif` or `bin`. The actual extension is {0}".format(str(filename_temp[-1])))
+
+                    outds = outdriver.Create(filename[i], cols, rows, bands, gdal_dtype)
+
+                    post_1 = self.xres[reference] if isinstance(self.xres, tuple) else self.xres
+                    post_2 = self.yres[reference] if isinstance(self.yres, tuple) else self.yres
+                    outds.SetGeoTransform([origin_x, post_1, 0.0, origin_y, 0.0, post_2])
+
+                    outds.SetProjection(self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
+
+                    out_band = outds.GetRasterBand(band)
+                    out_band.WriteArray(data_)
+                    out_band.SetNoDataValue(
+                        self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
+
+                    print ("File {0} converted successfully".format(str(filename[i])))
+
+            else:
+                filename_temp = filename.split('.')
+
+                if filename_temp[-1] == 'tif':
+                    outdriver = gdal.GetDriverByName("GTiff")
+                elif filename_temp[-1] == 'bin':
+                    outdriver = gdal.GetDriverByName('ENVI')
+                else:
+                    raise AssertionError(
+                        "File extension must be `tif` or `bin`. The actual extension is {0}".format(
+                            str(filename_temp[-1])))
+
+                data = data[export]
+
+                if data.ndim <= 1:
+                    raise AssertionError("Only 2 dimensional array can be converted into a .tiff file.")
+
+                rows, cols = data.shape
+                bands = band
+                gdal_dtype = self.__TYPEMAP[data.dtype.name]
+                origin_x = self.xmin[reference] if isinstance(self.xmin, tuple) else self.xmin
+                origin_y = self.ymin[reference] if isinstance(self.ymin, tuple) else self.ymin
+
+                outds = outdriver.Create(filename, cols, rows, bands, gdal_dtype)
+
+                post_1 = self.xres[reference] if isinstance(self.xres, tuple) else self.xres
+                post_2 = self.yres[reference] if isinstance(self.yres, tuple) else self.yres
+                outds.SetGeoTransform([origin_x, post_1, 0.0, origin_y, 0.0, post_2])
+
+                outds.SetProjection(
+                    self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
+
+                out_band = outds.GetRasterBand(band)
+                out_band.WriteArray(data)
+                out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
+
+                print ("File {0} converted successfully".format(str(filename)))
+
+        else:
+            filename_temp = filename.split('.')
+
+            if filename_temp[-1] == 'tif':
+                outdriver = gdal.GetDriverByName("GTiff")
+            elif filename_temp[-1] == 'bin':
+                outdriver = gdal.GetDriverByName('ENVI')
+            else:
+                raise AssertionError("File extension must be `tif` or `bin`. The actual extension is {0}".format(str(filename_temp[-1])))
+
+            if data.ndim <= 1:
+                raise AssertionError("Only 2 dimensional array can be converted into a .tiff file.")
+
+            rows, cols = data.shape
+            bands = band
+            gdal_dtype = self.__TYPEMAP[data.dtype.name]
+            origin_x = self.xmin[reference] if isinstance(self.xmin, tuple) else self.xmin
+            origin_y = self.ymin[reference] if isinstance(self.ymin, tuple) else self.ymin
+
+            outds = outdriver.Create(filename, cols, rows, bands, gdal_dtype)
+
+            post_1 = self.xres[reference] if isinstance(self.xres, tuple) else self.xres
+            post_2 = self.yres[reference] if isinstance(self.yres, tuple) else self.yres
+            outds.SetGeoTransform([origin_x, post_1, 0.0, origin_y, 0.0, post_2])
+
+            outds.SetProjection(self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
+
+            out_band = outds.GetRasterBand(band)
+            out_band.WriteArray(data)
+            out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
+
+            print ("File {0} converted successfully".format(str(filename)))
