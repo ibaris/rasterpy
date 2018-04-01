@@ -163,10 +163,8 @@ class Raster:
 
             self.info = {'bands': self.bands,
                          'dim': self.bands,
-                         'driver': self.driver,
                          'dtype':self.dtype,
                          'projection':self.projection,
-                         'srs':self.srs,
                          'geotrandform': self.geotransform,
                          'xmin':self.xmin,
                          'ymin':self.ymin,
@@ -209,6 +207,17 @@ class Raster:
 
             if self.nodata is None:
                 self.nodata = -99999
+
+            self.info = {'bands': self.bands,
+                         'dim': self.bands,
+                         'dtype':self.dtype,
+                         'projection':self.projection,
+                         'geotrandform': self.geotransform,
+                         'xmin':self.xmin,
+                         'ymin':self.ymin,
+                         'xres':self.xres,
+                         'yres':self.yres,
+                         'nodata':self.nodata}
 
     def __subset(self, x, y):
         """
