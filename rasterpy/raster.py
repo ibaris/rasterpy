@@ -31,8 +31,8 @@ class Raster:
     check_dim : bool
         If True the imported files must have the same dimensions.
 
-    Returns
-    -------
+    Attributes
+    ----------
     All returns are attributes!
     raster : osgeo.gdal.Dataset
         Contains the gdal data set for the raster files.
@@ -254,8 +254,8 @@ class Raster:
             if ndim is 1 the output array is one dimensional. You can convert it to an 2 dimensional array with
             Raster.reshape
 
-        Returns
-        -------
+        Attributes
+        ----------
         array : array_like or tuple with array_likes
             Raster files as arrays.
 
@@ -441,7 +441,9 @@ class Raster:
                     elif filename_temp[-1] == 'bin':
                         outdriver = gdal.GetDriverByName('ENVI')
                     else:
-                        raise AssertionError("File extension must be `tif` or `bin`. The actual extension is {0}".format(str(filename_temp[-1])))
+                        raise AssertionError(
+                            "File extension must be `tif` or `bin`. The actual extension is {0}".format(
+                                str(filename_temp[-1])))
 
                     outds = outdriver.Create(filename[i], cols, rows, bands, gdal_dtype)
 
@@ -449,7 +451,8 @@ class Raster:
                     post_2 = self.yres[reference] if isinstance(self.yres, tuple) else self.yres
                     outds.SetGeoTransform([origin_x, post_1, 0.0, origin_y, 0.0, post_2])
 
-                    outds.SetProjection(self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
+                    outds.SetProjection(
+                        self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
 
                     out_band = outds.GetRasterBand(band)
                     out_band.WriteArray(data_)
@@ -504,7 +507,8 @@ class Raster:
             elif filename_temp[-1] == 'bin':
                 outdriver = gdal.GetDriverByName('ENVI')
             else:
-                raise AssertionError("File extension must be `tif` or `bin`. The actual extension is {0}".format(str(filename_temp[-1])))
+                raise AssertionError(
+                    "File extension must be `tif` or `bin`. The actual extension is {0}".format(str(filename_temp[-1])))
 
             if data.ndim <= 1:
                 raise AssertionError("Only 2 dimensional array can be converted into a .tiff file.")
@@ -528,3 +532,504 @@ class Raster:
             out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
 
             print ("File {0} converted successfully".format(str(filename)))
+
+    @staticmethod
+    def dB(x):
+        """
+        Convert a linear value to dB.
+        """
+        with np.errstate(invalid='ignore'):
+            return 10 * np.log10(x)
+
+    @staticmethod
+    def linear(x):
+        """
+        Convert a dB value in linear.
+        """
+        return 10 ** (x / 10)
+
+    @staticmethod
+    def BRDF(BSC, iza, vza, angle_unit='RAD'):
+        """
+        Convert a Radar Backscatter Coefficient (BSC) into a BRDF.
+
+        Note
+        -----
+        Hot spot direction is vza == iza and raa = 0.0
+
+        Parameters
+        ----------
+        BSC : int, float or array_like
+            Radar Backscatter Coefficient (sigma 0).
+
+        iza : int, float or array_like
+            Sun or incidence zenith angle.
+
+        vza : int, float or array_like
+            View or scattering zenith angle.
+
+        angle_unit : {'DEG', 'RAD'} (default = 'RAD'), optional
+            * 'DEG': All input angles (iza, vza, raa) are in [DEG].
+            * 'RAD': All input angles (iza, vza, raa) are in [RAD].
+
+        Returns
+        -------
+        BRDF value : int, float or array_like
+
+        """
+        if angle_unit == 'RAD':
+            return BSC / (np.cos(iza) * np.cos(vza) * (4 * np.pi))
+
+        elif angle_unit == 'DEG':
+            return BSC / (np.cos(np.radians(iza)) * np.cos(np.radians(vza)) * (4 * np.pi))
+        else:
+            raise ValueError("angle_unit must be 'RAD' or 'DEG'")
+
+    @staticmethod
+    def BRF(BRDF):
+        """
+        Convert a BRDF into a BRF.
+
+        Note
+        -----
+        Hot spot direction is vza == iza and raa = 0.0
+
+        Parameters
+        ----------
+        BRDF : int, float or array_like
+            BRDF value.
+
+        Returns
+        -------
+        BRF value : int, float or array_like
+
+        """
+        return np.pi * BRDF
+
+    @staticmethod
+    def BSC(BRDF, iza, vza, angle_unit='RAD'):
+        """
+        Convert a BRDF in to a Radar Backscatter Coefficient (BSC).
+
+        Note
+        -----
+        Hot spot direction is vza == iza and raa = 0.0
+
+        Parameters
+        ----------
+        BSC : int, float or array_like
+            Radar Backscatter Coefficient (sigma 0).
+
+        iza : int, float or array_like
+            Sun or incidence zenith angle.
+
+        vza : int, float or array_like
+            View or scattering zenith angle.
+
+        angle_unit : {'DEG', 'RAD'} (default = 'RAD'), optional
+            * 'DEG': All input angles (iza, vza, raa) are in [DEG].
+            * 'RAD': All input angles (iza, vza, raa) are in [RAD].
+
+        Returns
+        -------
+        BRDF value : int, float or array_like
+
+        """
+        if angle_unit == 'RAD':
+            return BRDF * np.cos(iza) * np.cos(vza) * 4 * np.pi
+
+        elif angle_unit == 'DEG':
+            return BRDF * np.cos(np.radians(iza)) * np.cos(np.radians(vza)) * (4 * np.pi)
+        else:
+            raise ValueError("angle_unit must be 'RAD' or 'DEG'")
+
+    def convert(self, system='BSC', to='BRDF', system_unit='linear', output_unit='linear', iza=None, vza=None,
+                angle_unit='RAD'):
+        """
+        Convert the data from BSC, BRDF, BRF to BRDF, BSC or BRF.
+
+        Parameters
+        ----------
+        system : {'BSC', 'BRDF', 'BRF'}
+            The actual unit of the data.
+        to : {'BSC', 'BRDF', 'BRF'}
+            The desired unit after conversion.
+        system_unit : {'linear', 'dB'}
+            Are the measurements in a linear scale or in decibel?
+        output_unit :  {'linear', 'dB'}
+            The desired output format.
+        iza : int, float or array_like
+            Sun or incidence zenith angle.
+
+        vza : int, float or array_like
+            View or scattering zenith angle.
+
+        angle_unit : {'DEG', 'RAD'} (default = 'RAD'), optional
+            * 'DEG': All input angles (iza, vza, raa) are in [DEG].
+            * 'RAD': All input angles (iza, vza, raa) are in [RAD].
+
+        Returns
+        -------
+        None
+        """
+        try:
+            self.array
+        except AttributeError:
+            raise AssertionError(
+                "Before you can convert you must convert the data to an array with Raster.to_array().")
+
+        if isinstance(self.raster, tuple):
+            if system is 'BSC':
+                if to is 'BRDF':
+                    if system_unit is 'linear':
+
+                        if output_unit is 'linear':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.BRDF(self.array[i], iza, vza, angle_unit)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        elif output_unit is 'dB':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.BRDF(self.array[i], iza, vza, angle_unit)
+                                temp = Raster.dB(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    elif system_unit is 'dB':
+
+                        if output_unit is 'linear':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.linear(self.array[i])
+                                temp = Raster.BRDF(temp, iza, vza, angle_unit)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        elif output_unit is 'dB':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.linear(self.array[i])
+                                temp = Raster.BRDF(temp, iza, vza, angle_unit)
+                                temp = Raster.dB(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    else:
+                        raise AssertionError("System unit must be 'linear' or 'dB'")
+
+                elif to is 'BRF':
+                    if system_unit is 'linear':
+
+                        if output_unit is 'linear':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.BRDF(self.array[i], iza, vza, angle_unit)
+                                temp = Raster.BRF(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        elif output_unit is 'dB':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.BRDF(self.array[i], iza, vza, angle_unit)
+                                temp = Raster.BRF(temp)
+                                temp = Raster.dB(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    elif system_unit is 'dB':
+
+                        if output_unit is 'linear':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.linear(self.array[i])
+                                temp = Raster.BRDF(temp, iza, vza, angle_unit)
+                                temp = Raster.BRF(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        elif output_unit is 'dB':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.linear(self.array[i])
+                                temp = Raster.BRDF(temp, iza, vza, angle_unit)
+                                temp = Raster.BRF(temp)
+                                temp = Raster.dB(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    else:
+                        raise AssertionError("System unit must be 'linear' or 'dB'")
+
+            if system is 'BRDF':
+                if to is 'BSC':
+                    if system_unit is 'linear':
+
+                        if output_unit is 'linear':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.BSC(self.array[i], iza, vza, angle_unit)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        elif output_unit is 'dB':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.BSC(self.array[i], iza, vza, angle_unit)
+                                temp = Raster.dB(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    elif system_unit is 'dB':
+
+                        if output_unit is 'linear':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.linear(self.array[i])
+                                temp = Raster.BSC(temp, iza, vza, angle_unit)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        elif output_unit is 'dB':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.linear(self.array[i])
+                                temp = Raster.BSC(temp, iza, vza, angle_unit)
+                                temp = Raster.dB(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    else:
+                        raise AssertionError("System unit must be 'linear' or 'dB'")
+
+                elif to is 'BRF':
+                    if system_unit is 'linear':
+
+                        if output_unit is 'linear':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.BRF(self.array[i])
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        elif output_unit is 'dB':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.BRF(self.array[i])
+                                temp = Raster.dB(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    elif system_unit is 'dB':
+
+                        if output_unit is 'linear':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.linear(self.array[i])
+                                temp = Raster.BRF(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        elif output_unit is 'dB':
+                            array_list = []
+                            for i in srange(len(self.array)):
+                                temp = Raster.linear(self.array[i])
+                                temp = Raster.BRF(temp)
+                                temp = Raster.dB(temp)
+                                array_list.append(temp)
+
+                            self.array = tuple(array_list)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    else:
+                        raise AssertionError("System unit must be 'linear' or 'dB'")
+
+        else:
+            if system is 'BSC':
+                if to is 'BRDF':
+                    if system_unit is 'linear':
+
+                        if output_unit is 'linear':
+                            self.array = Raster.BRDF(self.array, iza, vza, angle_unit)
+
+                        elif output_unit is 'dB':
+                            self.array = Raster.BRDF(self.array, iza, vza, angle_unit)
+                            self.array = Raster.dB(self.array)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    elif system_unit is 'dB':
+
+                        if output_unit is 'linear':
+                            self.array = Raster.linear(self.array)
+                            self.array = Raster.BRDF(self.array, iza, vza, angle_unit)
+
+                        elif output_unit is 'dB':
+                            self.array = Raster.linear(self.array)
+                            self.array = Raster.BRDF(self.array, iza, vza, angle_unit)
+                            self.array = Raster.dB(self.array)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    else:
+                        raise AssertionError("System unit must be 'linear' or 'dB'")
+
+                elif to is 'BRF':
+                    if system_unit is 'linear':
+
+                        if output_unit is 'linear':
+                            self.array = Raster.BRDF(self.array, iza, vza, angle_unit)
+                            self.array = Raster.BRF(self.array)
+
+                        elif output_unit is 'dB':
+                            self.array = Raster.BRDF(self.array, iza, vza, angle_unit)
+                            self.array = Raster.BRF(self.array)
+                            self.array = Raster.dB(self.array)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    elif system_unit is 'dB':
+
+                        if output_unit is 'linear':
+                            self.array = Raster.linear(self.array)
+                            self.array = Raster.BRDF(self.array, iza, vza, angle_unit)
+                            self.array = Raster.BRF(self.array)
+
+                        elif output_unit is 'dB':
+                            self.array = Raster.linear(self.array)
+                            self.array = Raster.BRDF(self.array, iza, vza, angle_unit)
+                            self.array = Raster.BRF(self.array)
+                            self.array = Raster.dB(self.array)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    else:
+                        raise AssertionError("System unit must be 'linear' or 'dB'")
+
+            if system is 'BRDF':
+                if to is 'BSC':
+                    if system_unit is 'linear':
+
+                        if output_unit is 'linear':
+                            self.array = Raster.BSC(self.array, iza, vza, angle_unit)
+
+                        elif output_unit is 'dB':
+                            self.array = Raster.BSC(self.array, iza, vza, angle_unit)
+                            self.array = Raster.dB(self.array)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    elif system_unit is 'dB':
+
+                        if output_unit is 'linear':
+                            self.array = Raster.linear(self.array)
+                            self.array = Raster.BSC(self.array, iza, vza, angle_unit)
+
+                        elif output_unit is 'dB':
+                            self.array = Raster.linear(self.array)
+                            self.array = Raster.BSC(self.array, iza, vza, angle_unit)
+                            self.array = Raster.dB(self.array)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    else:
+                        raise AssertionError("System unit must be 'linear' or 'dB'")
+
+                elif to is 'BRF':
+                    if system_unit is 'linear':
+
+                        if output_unit is 'linear':
+                            self.array = Raster.BRF(self.array)
+
+                        elif output_unit is 'dB':
+                            self.array = Raster.BRF(self.array)
+                            self.array = Raster.dB(self.array)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    elif system_unit is 'dB':
+
+                        if output_unit is 'linear':
+                            self.array = Raster.linear(self.array)
+                            self.array = Raster.BRF(self.array)
+
+                        elif output_unit is 'dB':
+                            self.array = Raster.linear(self.array)
+                            self.array = Raster.BRF(self.array)
+                            self.array = Raster.dB(self.array)
+
+                        else:
+                            raise AssertionError("Output unit must be 'linear' or 'dB'")
+
+                    else:
+                        raise AssertionError("System unit must be 'linear' or 'dB'")
+
+    def dstack(self):
+        """
+        Stack 1-D arrays as columns into a 2-D array.
+        Take a sequence of 1-D arrays and stack them as columns to make a single 2-D array.
+        2-D arrays are stacked as-is, just like with numpy.hstack. 1-D arrays are turned into 2-D columns first.
+
+        Attributes
+        ----------
+        stack : array_like
+            The array formed by stacking the given arrays.
+
+        """
+        try:
+            self.array
+        except AttributeError:
+            raise AssertionError(
+                "Before you can convert you must convert the data to an array with Raster.to_array().")
+
+        if not isinstance(self.raster, tuple):
+            raise AssertionError("You need more than one array to build a stack.")
+
+        self.stack = np.column_stack((self.array))
