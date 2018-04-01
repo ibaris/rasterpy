@@ -1,1 +1,1 @@
-from raster import Raster
+from .raster import Raster
