@@ -52,6 +52,8 @@ class Raster:
         Resulution information in x and y axis.
     nodata :
         No data values.
+    info : dict
+        All information in a dictionary.
     """
 
     def __init__(self, filename=None, path=None, extension=None, check_dim=True):
@@ -158,6 +160,19 @@ class Raster:
                     self.nodata[i] = -99999
 
             self.nodata = tuple(self.nodata)
+
+            self.info = {'bands': self.bands,
+                         'dim': self.bands,
+                         'driver': self.driver,
+                         'dtype':self.dtype,
+                         'projection':self.projection,
+                         'srs':self.srs,
+                         'geotrandform': self.geotransform,
+                         'xmin':self.xmin,
+                         'ymin':self.ymin,
+                         'xres':self.xres,
+                         'yres':self.yres,
+                         'nodata':self.nodata}
 
 
 
