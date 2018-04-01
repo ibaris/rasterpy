@@ -63,7 +63,7 @@ You can find the full documentation <a href="http://pyrism.readthedocs.io/en/lat
 
 # Built With
 * Python 2.7 (But it works with Python 3.5 as well)
-* Requirements: numpy, scipy
+* Requirements: numpy, gdal
 
 # Authors
 * **Ismail Baris** - *Initial work* - (i.baris@outlook.de)
