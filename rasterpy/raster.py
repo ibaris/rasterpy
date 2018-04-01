@@ -1011,7 +1011,7 @@ class Raster:
                     else:
                         raise AssertionError("System unit must be 'linear' or 'dB'")
 
-    def dstack(self):
+    def dstack2(self):
         """
         Stack 1-D arrays as columns into a 2-D array.
         Take a sequence of 1-D arrays and stack them as columns to make a single 2-D array.
@@ -1032,4 +1032,39 @@ class Raster:
         if not isinstance(self.raster, tuple):
             raise AssertionError("You need more than one array to build a stack.")
 
-        self.stack = np.column_stack((self.array))
+        self.stack = np.column_stack(self.array)
+
+    def dstack3(self):
+        try:
+            self.array
+        except AttributeError:
+            raise AssertionError(
+                "Before you can convert you must convert the data to an array with Raster.to_array().")
+
+        try:
+            if self.stack.ndim >= 3:
+                self.dstack2()
+                x = self.stack
+
+            else:
+                x = self.stack
+        except AttributeError:
+            self.dstack2()
+            x = self.stack
+
+        agg_num, hop = len(self.array), len(self.array)
+
+        # Pad to at least one block.
+        len_x, n_in = x.shape
+        if len_x < agg_num:  # not in get_matrix_data
+            x = np.concatenate((x, np.zeros((agg_num - len_x, n_in))))
+
+        # main 2d to 3d.
+        len_x = len(x)
+        i1 = 0
+        x3d = []
+        while i1 + agg_num <= len_x:
+            x3d.append(x[i1: i1 + agg_num])
+            i1 += hop
+
+        self.stack = np.array(x3d)
