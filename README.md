@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.travis-ci.org/ibaris/pyrism"><img src="https://www.travis-ci.org/ibaris/pyrism.svg?branch=master"></a>
+  <a href="https://www.travis-ci.org/ibaris/rasterpy"><img src="https://www.travis-ci.org/ibaris/rasterpy.svg?branch=master"></a>
   <a href='https://coveralls.io/github/ibaris/pyrism?branch=master'><img src='https://coveralls.io/repos/github/ibaris/pyrism/badge.svg?branch=master' alt='Coverage Status' /></a>
   <a href='http://pyrism.readthedocs.io/en/latest/?badge=latest'>
     <img src='https://readthedocs.org/projects/pyrism/badge/?version=latest' alt='Documentation Status' /></a>
