@@ -95,7 +95,7 @@ class TestArray:
     def test_array_one(self, datadir):
         file1 = datadir('test_file_1.tif')
         ras = rpy.Raster(file1, path=None)
-        ras.to_array()
+        ras.to_array(band=1)
         assert ras.array[0] == 117
         assert ras.array[-1] == 112
         assert ras.array.ndim == 1
