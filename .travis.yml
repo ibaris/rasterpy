@@ -1,10 +1,28 @@
 language: python
 sudo: false
-cache: pip
+cache:
+  directories:
+    - ~/.cache/pip
+
+env:
+  global:
+    - PIP_WHEEL_DIR=$HOME/.cache/pip/wheels
+    - PIP_FIND_LINKS=file://$HOME/.cache/pip/wheels
+#    - TESTDATA_DIR=$HOME/testdata
+
+addons:
+  apt:
+    packages:
+    - libspatialite-dev
+    - swig2.0
 
 python:
   - "2.7"
   - "3.4"
+
+virtualenv:
+  system_site_packages: true
+
 
 before_install:
   - sudo add-apt-repository ppa:ubuntugis/ppa -y
