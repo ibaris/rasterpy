@@ -57,6 +57,80 @@ Independent how you installed ` pyrism `, you should test that it was sucessfull
 If you don't get an error message, the module import was sucessfull.
 
 # Example
+Here is an example of some basic features that rasterpy provides. Three bands are read from an image and averaged to produce something like a panchromatic band. This new band is then written to a new single band TIFF.
+
+At first import rasterpy:
+```python
+import rasterpy as rpy
+import numpy as np
+```
+After that we define a path where our test tif file is located:
+```python
+path = "C:\Users\ibari\Dropbox\GitHub\\rasterpy\\tests\data"
+```
+
+Then we open the grid and read it to an multidimensional array:
+```python
+grid = rpy.Raster('RGB.byte.tif', path)
+grid.to_array()
+```
+
+By default the loaded grid is flatten. The reason is as following: With a flatten 2 dimensional array the calculations based on the array are much easier:
+```python
+>>> print(grid.array)
+[[0. 0. 0. ... 0. 0. 0.]
+ [0. 0. 0. ... 0. 0. 0.]
+ [0. 0. 0. ... 0. 0. 0.]]
+```
+
+We can reshape the array to their original shapes with:
+```python
+>>> grid.reshape()
+>>> print(grid.array)
+[[[0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]
+  ...
+  [0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]]
+ [[0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]
+  ...
+  [0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]]
+ [[0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]
+  ...
+  [0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]
+  [0. 0. 0. ... 0. 0. 0.]]]
+```
+And we can also flatten it again with:
+```python
+>>> grid.flatten()
+>>> print(grid.array)
+[[0. 0. 0. ... 0. 0. 0.]
+ [0. 0. 0. ... 0. 0. 0.]
+ [0. 0. 0. ... 0. 0. 0.]]
+```
+
+Now average each pixels of the RGB bands:
+```python
+pan = np.mean(grid.array, axis=0)
+```
+
+After that we can write the reshaped pan array as a tiff:
+```python
+grid.write(data=pan.reshape(grid.rows, grid.cols), filename='RGB_total.tif', path=path)
+```
+
+The result is as following:
+<br>
+<a href="https://i.imgur.com/oCfHTNj.png"><img src="https://i.imgur.com/oCfHTNj.png" alt="RGB_total.tif" width="500"></a>
 
 # Documentation
 You can find the full documentation <a href="http://pyrism.readthedocs.io/en/latest/index.html">here</a>.
