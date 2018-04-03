@@ -27,9 +27,6 @@
 
 <p align="center">
   <a href="https://www.travis-ci.org/ibaris/rasterpy"><img src="https://www.travis-ci.org/ibaris/rasterpy.svg?branch=master"></a>
-  <a href='https://coveralls.io/github/ibaris/pyrism?branch=master'><img src='https://coveralls.io/repos/github/ibaris/pyrism/badge.svg?branch=master' alt='Coverage Status' /></a>
-  <a href='http://pyrism.readthedocs.io/en/latest/?badge=latest'>
-    <img src='https://readthedocs.org/projects/pyrism/badge/?version=latest' alt='Documentation Status' /></a>
 </p>
 
 # Description
@@ -133,7 +130,6 @@ The result is as following:
 <a href="https://i.imgur.com/oCfHTNj.png"><img src="https://i.imgur.com/oCfHTNj.png" alt="RGB_total.tif" width="500"></a>
 
 # Documentation
-You can find the full documentation <a href="http://pyrism.readthedocs.io/en/latest/index.html">here</a>.
 
 # Built With
 * Python 2.7 (But it works with Python 3.5 as well)
