@@ -2,6 +2,7 @@ import os
 from distutils import dir_util
 
 from pytest import fixture
+import pytest
 import rasterpy as rpy
 import numpy as np
 
@@ -100,3 +101,47 @@ class TestArray:
         assert ras.array[-1] == 112
         assert ras.array.ndim == 1
         assert ras.array.size == 1500
+
+class TestRaise:
+    def test_reshape(self, datadir):
+        file1 = datadir('test_file_1.tif')
+        ras = rpy.Raster(file1, path=None)
+        with pytest.raises(AssertionError):
+            ras.reshape()
+
+    def test_flatten(self, datadir):
+        file1 = datadir('test_file_1.tif')
+        ras = rpy.Raster(file1, path=None)
+        with pytest.raises(AssertionError):
+            ras.flatten()
+
+    def test_set_nodata(self, datadir):
+        file1 = datadir('test_file_1.tif')
+        ras = rpy.Raster(file1, path=None)
+        with pytest.raises(AssertionError):
+            ras.set_nodata(-99999)
+
+    # def test_write(self, datadir):
+    #     file1 = datadir('test_file_1.tif')
+    #     ras = rpy.Raster(file1, path=None)
+    #     ras.to_array()
+    #     with pytest.raises(AssertionError):
+    #         ras.write(ras.array, 'test')
+
+    def test_convert(self, datadir):
+        file1 = datadir('test_file_1.tif')
+        ras = rpy.Raster(file1, path=None)
+        with pytest.raises(AssertionError):
+            ras.convert()
+
+    def test_dstack2(self, datadir):
+        file1 = datadir('test_file_1.tif')
+        ras = rpy.Raster(file1, path=None)
+        with pytest.raises(AssertionError):
+            ras.dstack2()
+
+    def test_dstack3(self, datadir):
+        file1 = datadir('test_file_1.tif')
+        ras = rpy.Raster(file1, path=None)
+        with pytest.raises(AssertionError):
+            ras.dstack3()
