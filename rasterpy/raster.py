@@ -163,14 +163,14 @@ class Raster:
 
             self.info = {'bands': self.bands,
                          'dim': self.bands,
-                         'dtype':self.dtype,
-                         'projection':self.projection,
+                         'dtype': self.dtype,
+                         'projection': self.projection,
                          'geotrandform': self.geotransform,
-                         'xmin':self.xmin,
-                         'ymin':self.ymin,
-                         'xres':self.xres,
-                         'yres':self.yres,
-                         'nodata':self.nodata}
+                         'xmin': self.xmin,
+                         'ymin': self.ymin,
+                         'xres': self.xres,
+                         'yres': self.yres,
+                         'nodata': self.nodata}
 
 
 
@@ -210,14 +210,14 @@ class Raster:
 
             self.info = {'bands': self.bands,
                          'dim': self.bands,
-                         'dtype':self.dtype,
-                         'projection':self.projection,
+                         'dtype': self.dtype,
+                         'projection': self.projection,
                          'geotrandform': self.geotransform,
-                         'xmin':self.xmin,
-                         'ymin':self.ymin,
-                         'xres':self.xres,
-                         'yres':self.yres,
-                         'nodata':self.nodata}
+                         'xmin': self.xmin,
+                         'ymin': self.ymin,
+                         'xres': self.xres,
+                         'yres': self.yres,
+                         'nodata': self.nodata}
 
     def __subset(self, x, y):
         """
@@ -259,23 +259,23 @@ class Raster:
 
         return data
 
-    def to_array(self, band=1, subset_x=None, subset_y=None, ndim=1):
+    def to_array(self, band='all', subset_x=None, subset_y=None, flatten=True):
         """
         Converts a binary file of ENVI or PolSARpro or a tif to a numpy
         array. Lack of an ENVI .hdr file will cause this to crash.
 
         Parameters
         ----------
-        band : int
-            Define a band which you want to export.
+        band : int or 'all':
+            Define a band which you want to import. If 'all' (default) import all bands in a multidimensional array.
         subset_x : tuple with int
             If you want to load a subset of the raster file define here the
             x pixel coordinates like (500, 800).
         subset_y : tuple with int
             If you want to load a subset of the raster file define here the
             y pixel coordinates like (500, 800).
-        ndim : {1, 2}
-            if ndim is 1 the output array is one dimensional. You can convert it to an 2 dimensional array with
+        flatten : bool
+            if flatten is True the output array is one dimensional. You can convert it to an 2 dimensional array with
             Raster.reshape
 
         Attributes
@@ -285,45 +285,106 @@ class Raster:
 
         """
         if isinstance(self.raster, tuple):
-            band_ = tuple(map(lambda item: item.GetRasterBand(band), self.raster))
+            if isinstance(band, int):
+                band_ = tuple(map(lambda item: item.GetRasterBand(band), self.raster))
 
-            self.array = tuple(map(lambda tband, tcols, trows: tband.ReadAsArray(0, 0, tcols, trows),
-                                   band_, self.cols, self.rows))
+                self.array = tuple(map(lambda tband, tcols, trows: tband.ReadAsArray(0, 0, tcols, trows),
+                                       band_, self.cols, self.rows))
 
-            if subset_x is not None and subset_y is not None:
-                self.array = self.__subset(x=subset_x, y=subset_y)
-                self.cols = tuple(map(lambda item: item.shape[1], self.array))
-                self.rows = tuple(map(lambda item: item.shape[0], self.array))
+                if subset_x is not None and subset_y is not None:
+                    self.array = self.__subset(x=subset_x, y=subset_y)
+                    self.cols = tuple(map(lambda item: item.shape[1], self.array))
+                    self.rows = tuple(map(lambda item: item.shape[0], self.array))
 
-            for i in srange(len(self.array)):
-                self.array[i][np.isnan(self.array[i])] = self.nodata[i]
-
-            if ndim == 1:
-                array = []
                 for i in srange(len(self.array)):
-                    temp = self.array[i].flatten()
-                    array.append(temp)
+                    self.array[i][np.isnan(self.array[i])] = self.nodata[i]
 
-                self.array = tuple(array)
+                if flatten:
+                    array = []
+                    for i in srange(len(self.array)):
+                        temp = self.array[i].flatten()
+                        array.append(temp)
 
-            for item in self.filename:
-                print ("File {0} opened successfully".format(str(item)))
+                    self.array = tuple(array)
+
+                for item in self.filename:
+                    print ("File {0} opened successfully".format(str(item)))
+
+            elif band is 'all':
+                images = []
+                for i in range(len(self.bands)):
+                    image = np.zeros((self.bands[i], self.rows[i], self.cols[i]),
+                                     dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype[i]))
+
+                    for b in range(self.bands[i]):
+                        # Remember, GDAL index is on 1, but Python is on 0 -- so we add 1 for our GDAL calls
+                        band_ = self.raster[i].GetRasterBand(b + 1)
+
+                        # Read in the band's data into the third dimension of our array
+                        image[b] = band_.ReadAsArray()
+
+                        # if subset_x is not None and subset_y is not None:
+                        #     image[b] = self.__subset(x=subset_x, y=subset_y)
+
+                    images.append(image)
+
+                self.array = tuple(images)
+
+                if flatten:
+                    images = []
+                    for i in range(len(self.bands)):
+                        image = np.zeros((self.bands[i], self.array[i][0].size, ),
+                                         dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype[i]))
+
+                        for b in range(self.bands[i]):
+                            image[b] = self.array[i][b].flatten()
+
+                        images.append(image)
+
+                    self.array = tuple(images)
 
         else:
-            band_ = self.raster.GetRasterBand(band)
-            self.array = band_.ReadAsArray(0, 0, self.cols, self.rows)
+            if isinstance(band, int):
+                band_ = self.raster.GetRasterBand(band)
+                self.array = band_.ReadAsArray(0, 0, self.cols, self.rows)
 
-            if subset_x is not None and subset_y is not None:
-                self.array = self.__subset(x=subset_x, y=subset_y)
-                self.cols = self.array.shape[1]
-                self.rows = self.array.shape[0]
+                if subset_x is not None and subset_y is not None:
+                    self.array = self.__subset(x=subset_x, y=subset_y)
+                    self.cols = self.array.shape[1]
+                    self.rows = self.array.shape[0]
 
-            self.array[np.isnan(self.array)] = self.nodata
+                self.array[np.isnan(self.array)] = self.nodata
 
-            if ndim == 1:
-                self.array = self.array.flatten()
+                if flatten:
+                    self.array = self.array.flatten()
 
-            print ("File {0} opened successfully".format(str(self.filename)))
+                print ("File {0} opened successfully".format(str(self.filename)))
+
+            elif band is 'all':
+
+                image = np.zeros((self.bands, self.rows, self.cols),
+                                 dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype))
+
+                for b in range(self.bands):
+                    # Remember, GDAL index is on 1, but Python is on 0 -- so we add 1 for our GDAL calls
+                    band_ = self.raster.GetRasterBand(b + 1)
+
+                    # Read in the band's data into the third dimension of our array
+                    image[b] = band_.ReadAsArray()
+
+                    # if subset_x is not None and subset_y is not None:
+                    #     image[b] = self.__subset(x=subset_x, y=subset_y)
+
+                self.array = image
+
+                if flatten:
+                    image = np.zeros((self.bands, self.array[0].size,),
+                                     dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype))
+
+                    for b in range(self.bands):
+                        image[b] = self.array[b].flatten()
+
+                    self.array = image
 
     def reshape(self):
         """
@@ -341,15 +402,27 @@ class Raster:
                 "Before you can reshape a file you must convert it to an array with Raster.to_array().")
 
         if isinstance(self.raster, tuple):
-            array = []
-            for i in srange(len(self.array)):
-                temp = self.array[i].reshape((self.rows[i], self.cols[i]))
-                array.append(temp)
+            if self.array[0].ndim == 1:
+                array = []
+                for i in srange(len(self.array)):
+                    temp = self.array[i].reshape((self.rows[i], self.cols[i]))
+                    array.append(temp)
 
-            self.array = tuple(array)
+                self.array = tuple(array)
 
+            else:
+                array = []
+                for i in srange(len(self.array)):
+                    temp = self.array[i].reshape((self.array[i].shape[0], self.rows[i], self.cols[i]))
+                    array.append(temp)
+
+                self.array = tuple(array)
         else:
-            self.array = self.array.reshape((self.rows, self.cols))
+            if self.array.ndim == 1:
+                self.array = self.array.reshape((self.rows, self.cols))
+
+            else:
+                self.array = self.array.reshape((self.array.shape[0], self.rows, self.cols))
 
     def flatten(self):
         """
@@ -367,15 +440,39 @@ class Raster:
                 "Before you can flatten a file you must convert it to an array with Raster.to_array().")
 
         if isinstance(self.raster, tuple):
-            array = []
-            for i in srange(len(self.array)):
-                temp = self.array[i].flatten()
-                array.append(temp)
+            if self.array[0].ndim == 1:
+                array = []
+                for i in srange(len(self.array)):
+                    temp = self.array[i].flatten()
+                    array.append(temp)
 
-            self.array = tuple(array)
+                self.array = tuple(array)
+
+            else:
+                images = []
+                for i in srange(len(self.array)):
+                    image = np.zeros((self.bands[i], self.array[i][0].size,),
+                                     dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype[i]))
+
+                    for b in range(self.bands[i]):
+                        image[b] = self.array[i][b].flatten()
+
+                    images.append(image)
+
+                self.array = tuple(images)
 
         else:
-            self.array = self.array.flatten()
+            if self.array.ndim == 1:
+                self.array = self.array.flatten()
+
+            else:
+                image = np.zeros((self.bands, self.array[0].size,),
+                                 dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype))
+
+                for b in range(self.bands):
+                    image[b] = self.array[b].flatten()
+
+                self.array = image
 
     def set_nodata(self, nodata):
         """
@@ -411,7 +508,7 @@ class Raster:
             self.nodata = nodata
             self.array[np.isnan(self.array)] = self.nodata
 
-    def to_grid(self, data, filename, path=None, export='all', band=1, reference=0):
+    def write(self, data, filename, path=None, export='all', band=1, reference=0):
         """
         Convert an array into a binary (.bin) file with header (.hdr) or a Tif file.
 
