@@ -10,7 +10,7 @@ path = "C:\Users\ibari\Dropbox\GitHub\\rasterpy\\tests\data"
 
 # Then we open the grid and read it to an multidimensional array:
 grid = rpy.Raster('RGB.byte.tif', path)
-print(grid.to_array())
+grid.to_array()
 
 # By default the loaded grid is flatten. The reason is as following: With a flatten 2 dimensional array the calculations
 # based on the array are much easier:
