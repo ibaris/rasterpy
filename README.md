@@ -27,6 +27,9 @@
 
 <p align="center">
   <a href="https://www.travis-ci.org/ibaris/rasterpy"><img src="https://www.travis-ci.org/ibaris/rasterpy.svg?branch=master"></a>
+  <a href='http://rasterpy.readthedocs.io/en/latest/?badge=latest'>
+    <img src='https://readthedocs.org/projects/rasterpy/badge/?version=latest' alt='Documentation Status' />
+</a>
 </p>
 
 # Description
@@ -276,6 +279,7 @@ The result is:
 <a href="https://i.imgur.com/jAOn2dp.png"><img src="https://i.imgur.com/jAOn2dp.png" width="500"></a>
 
 # Documentation
+You can find the full documentation <a href="http://rasterpy.readthedocs.io/en/latest/index.html">here</a>.
 
 # Built With
 * Python 2.7 (But it works with Python 3.5 as well)
