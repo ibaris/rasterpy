@@ -27,6 +27,9 @@
 
 <p align="center">
   <a href="https://www.travis-ci.org/ibaris/rasterpy"><img src="https://www.travis-ci.org/ibaris/rasterpy.svg?branch=master"></a>
+  <a href='http://rasterpy.readthedocs.io/en/latest/?badge=latest'>
+    <img src='https://readthedocs.org/projects/rasterpy/badge/?version=latest' alt='Documentation Status' />
+</a>
 </p>
 
 # Description
@@ -35,7 +38,12 @@ Rasterpy contains basic routines to read and write raster files with python. Wit
 * **'.hdr'**: All ENVI formats like `.bin` and `.hdr` formats. This is usefull if you want to read data from third-party software like Polsarpro. 
 
 # Installation
-There are currently one method to install `rasterpy`.
+There are currently different methods to install `rasterpy`.
+
+### Using pip
+The ` rasterpy ` package is provided on pip. You can install it with::
+
+    pip install rasterpy
     
 ### Standard Python
 You can also download the source code package from this repository or from pip. Unpack the file you obtained into some directory (it can be a temporary directory) and then run::
@@ -43,7 +51,7 @@ You can also download the source code package from this repository or from pip. 
     python setup.py install
   
 ### Test installation success
-Independent how you installed ` pyrism `, you should test that it was sucessfull by the following tests::
+Independent how you installed ` rasterpy `, you should test that it was sucessfull by the following tests::
 
     python -c "from rasterpy import Raster"
 
@@ -276,6 +284,7 @@ The result is:
 <a href="https://i.imgur.com/jAOn2dp.png"><img src="https://i.imgur.com/jAOn2dp.png" width="500"></a>
 
 # Documentation
+You can find the full documentation <a href="http://rasterpy.readthedocs.io/en/latest/index.html">here</a>.
 
 # Built With
 * Python 2.7 (But it works with Python 3.5 as well)
