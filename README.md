@@ -220,7 +220,7 @@ angle.to_array(band=(1, 2), flatten=False)
 
 Note, that the arrays were converted from a BRF into a BRDF (dB) in the previous step:
 ```python
-grid.convert(system='BRDF', to='BSC', system_unit='dB', output_unit='dB', iza=angle.array[0], vza=angle.array[2])
+grid.convert(system='BRDF', to='BSC', system_unit='dB', output_unit='dB', iza=angle.array[0], vza=angle.array[1])
 ```
 
 ```python
