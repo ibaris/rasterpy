@@ -23,6 +23,5 @@ print(angle.stack[0])
 
 # As one can see the sensing geometry of the first pixel is:
 print("The inclination zenith angle is: {0} [DEG]".format(angle.stack[0][0]))
-print("The inclination azimuth angle is: {0} [DEG]".format(angle.stack[0][1]))
-print("The viewing zenith angle is: {0} [DEG]".format(angle.stack[0][2]))
-print("The viewing azimuth angle is: {0} [DEG]".format(angle.stack[0][3]))
+print("The viewing zenith angle is: {0} [DEG]".format(angle.stack[0][1]))
+print("The relative azimuth angle is: {0} [DEG]".format(angle.stack[0][2]))
