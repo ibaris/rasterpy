@@ -274,15 +274,16 @@ class Raster:
 
         return self.array
 
-    def to_array(self, band='all', flatten=True, quantification_factor=1):
+    def to_array(self, band=None, flatten=True, quantification_factor=1):
         """
         Converts a binary file of ENVI or PolSARpro or a tif to a numpy
         array.
 
         Parameters
         ----------
-        band : int or 'all':
-            Define a band which you want to import. If 'all' (default) import all bands in a multidimensional array.
+        band : int, tuple or None, optional:
+            Define bands which you want to import. If None (default) import all bands in a multidimensional array. You
+            can also specify bands in a tuple. E.g. band=(1, 3) will load the first and third band of the image.
         flatten : bool
             if flatten is True the output array is one dimensional. You can convert it to an 2 dimensional array with
             Raster.reshape
@@ -297,132 +298,127 @@ class Raster:
 
         """
         if isinstance(self.raster, tuple):
-            if isinstance(band, int):
-                band_ = tuple(map(lambda item: item.GetRasterBand(band), self.raster))
+            images = []
+            for i in srange(len(self.raster)):
 
-                self.array = tuple(map(lambda tband, tcols, trows: tband.ReadAsArray(0, 0, tcols, trows),
-                                       band_, self.cols, self.rows))
+                if band is not None:
+                    if isinstance(band, list):
+                        band = tuple(band)
+                        nband = len(band)
 
-                if quantification_factor > 1:
-                    self.array = tuple(map(lambda array: array.astype(np.float32) / quantification_factor), self.array)
+                    elif isinstance(band, int):
+                        nband = 1
 
-                else:
-                    pass
-
-                # if subset_x is not None and subset_y is not None:
-                #     self.array = self.__subset(x=subset_x, y=subset_y)
-                #     self.cols = tuple(map(lambda item: item.shape[1], self.array))
-                #     self.rows = tuple(map(lambda item: item.shape[0], self.array))
-
-                for i in srange(len(self.array)):
-                    self.array[i][np.isnan(self.array[i])] = self.nodata[i]
-
-                if flatten:
-                    array = []
-                    for i in srange(len(self.array)):
-                        temp = self.array[i].flatten()
-                        array.append(temp)
-
-                    self.array = tuple(array)
-
-
-            elif band is 'all':
-                images = []
-                for i in srange(len(self.bands)):
-                    image = np.zeros((self.bands[i], self.rows[i], self.cols[i]),
-                                     dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype[i]))
-
-                    for b in srange(self.bands[i]):
-                        # Remember, GDAL index is on 1, but Python is on 0 -- so we add 1 for our GDAL calls
-                        band_ = self.raster[i].GetRasterBand(b + 1)
-
-                        # Read in the band's data into the third dimension of our array
-                        image[b] = band_.ReadAsArray()
-
-                        # if subset_x is not None and subset_y is not None:
-                        #     image[b] = self.__subset(x=subset_x, y=subset_y)
-
-                    if quantification_factor > 1:
-                        image = image.astype(np.float32) / quantification_factor
                     else:
-                        pass
+                        nband = len(band)
 
-                    image[np.isnan(image)] = self.nodata[i]
+                else:
+                    nband = self.bands[i]
+                    band = range(self.bands[i])
+                    band = [x + 1 for x in band]
 
-                    images.append(image)
+                image = np.zeros((nband, self.rows[i], self.cols[i]),
+                                 dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype[i]))
 
-                self.array = tuple(images)
+                if isinstance(band, int):
+                    band_ = self.raster[i].GetRasterBand(band)
+                    image[0] = band_.ReadAsArray()
 
-                if flatten:
-                    images = []
-                    for i in srange(len(self.bands)):
-                        image = np.zeros((self.bands[i], self.array[i][0].size,),
-                                         dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype[i]))
+                else:
+                    band_select_list = []
+                    for b in band:
+                        # Remember, GDAL index is on 1, but Python is on 0 -- so we add 1 for our GDAL calls
+                        band_ = self.raster[i].GetRasterBand(b)
+                        band_select_list.append(band_)
 
-                        for b in srange(self.bands[i]):
-                            image[b] = self.array[i][b].flatten()
-
-                        images.append(image.flatten() if self.bands[i] == 1 else image)
-
-                    self.array = tuple(images)
-
-        else:
-            if isinstance(band, int):
-                band_ = self.raster.GetRasterBand(band)
-                self.array = band_.ReadAsArray(0, 0, self.cols, self.rows)
+                    for j in srange(nband):
+                        # Read in the band's data into the third dimension of our array
+                        image[j] = band_select_list[j].ReadAsArray()
 
                 if quantification_factor > 1:
-                    self.array = self.array.astype(np.float32) / quantification_factor
+                    image = image.astype(np.float32) / quantification_factor
                 else:
                     pass
 
-                # if subset_x is not None and subset_y is not None:
-                #     self.array = self.__subset(x=subset_x, y=subset_y)
-                #     self.cols = self.array.shape[1]
-                #     self.rows = self.array.shape[0]
-
-                self.array[np.isnan(self.array)] = self.nodata
-
                 if flatten:
-                    self.array = self.array.flatten()
+                    array = image
 
-            elif band is 'all':
-
-                image = np.zeros((self.bands, self.rows, self.cols),
-                                 dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype))
-
-                for b in srange(self.bands):
-                    # Remember, GDAL index is on 1, but Python is on 0 -- so we add 1 for our GDAL calls
-                    band_ = self.raster.GetRasterBand(b + 1)
-
-                    # Read in the band's data into the third dimension of our array
-                    image[b] = band_.ReadAsArray()
-
-                    # if subset_x is not None and subset_y is not None:
-                    #     image[b] = self.__subset(x=subset_x, y=subset_y)
-
-                if quantification_factor > 1:
-                    self.array = image.astype(np.float32) / quantification_factor
-                else:
-                    self.array = image
-
-                if flatten:
-                    image = np.zeros((self.bands, self.array[0].size,),
+                    image = np.zeros((nband, array[0].size,),
                                      dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype))
 
-                    for b in srange(self.bands):
+                    if isinstance(band, int):
+                        image[0] = array.flatten()
+                        image = image.flatten() if nband == 1 else image
+
+                    else:
+                        for b in srange(nband):
+                            image[b] = array[b].flatten()
+
+                        image = image.flatten() if nband == 1 else image
+
+                image[np.isnan(image)] = self.nodata[i]
+
+                images.append(image)
+
+            self.array = tuple(images)
+
+        else:
+            if band is not None:
+                if isinstance(band, list):
+                    band = tuple(band)
+                    nband = len(band)
+
+                elif isinstance(band, int):
+                    band = band
+                    nband = 1
+
+                else:
+                    nband = len(band)
+
+            else:
+                nband = self.bands
+                band = range(self.bands)
+                band = [x + 1 for x in band]
+
+            image = np.zeros((nband, self.rows, self.cols),
+                             dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype))
+
+            if isinstance(band, int):
+                band_ = self.raster.GetRasterBand(band)
+                image[0] = band_.ReadAsArray()
+
+            else:
+                band_select_list = []
+                for b in band:
+                    # Remember, GDAL index is on 1, but Python is on 0 -- so we add 1 for our GDAL calls
+                    band_ = self.raster.GetRasterBand(b)
+
+                    band_select_list.append(band_)
+
+                for j in srange(nband):
+                    # Read in the band's data into the third dimension of our array
+                    image[j] = band_select_list[j].ReadAsArray()
+
+            if quantification_factor > 1:
+                self.array = image.astype(np.float32) / quantification_factor
+            else:
+                self.array = image
+
+            if flatten:
+                image = np.zeros((nband, self.array[0].size,),
+                                 dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype))
+
+                if isinstance(band, int):
+                    image[0] = self.array.flatten()
+                else:
+                    for b in srange(nband):
                         image[b] = self.array[b].flatten()
 
-                    self.array = image.flatten() if self.bands == 1 else image
+                self.array = image.flatten() if nband == 1 else image
 
-    def reshape(self, data=None, rows=None, cols=None):
+    def reshape(self):
         """
         Reshape loaded arrays to their original dimension.
-
-        Returns
-        -------
-        None
-
         """
         try:
             self.array
