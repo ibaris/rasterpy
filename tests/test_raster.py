@@ -55,19 +55,19 @@ info_dict2 = {'bands': (3, 3),
 
 
 class TestImport:
-    def test_import_one(self, datadir):
-        file1 = datadir('RGB.BRDF.tif')
-        ras = rpy.Raster(file1, path=None)
-
-        assert ras.info == info_dict1
-
-    def test_import_tuple(self, datadir):
-        file1 = datadir('RGB.BRDF.tif')
-        file2 = datadir('RGB.BRDF.tif')
-        files = (file1, file2)
-        ras = rpy.Raster(files, path=None)
-
-        assert ras.info == info_dict2
+    # def test_import_one(self, datadir):
+    #     file1 = datadir('RGB.BRDF.tif')
+    #     ras = rpy.Raster(file1, path=None)
+    #
+    #     assert ras.info == info_dict1
+    #
+    # def test_import_tuple(self, datadir):
+    #     file1 = datadir('RGB.BRDF.tif')
+    #     file2 = datadir('RGB.BRDF.tif')
+    #     files = (file1, file2)
+    #     ras = rpy.Raster(files, path=None)
+    #
+    #     assert ras.info == info_dict2
 
     def test_no_data(self, datadir):
         file1 = datadir('RGB.BRDF.tif')
