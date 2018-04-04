@@ -29,7 +29,7 @@ grid.write(data=grid.array, filename='RGB.BRDF.tif', path=path)
 
 # We can also convert the arrays from a BRF or BRDF into Backscatter coefficients (BSC). For this we need the
 # inclination and viewing angles:
-angle = rpy.Raster('RGB.BRF.Angle.tif')
+angle = rpy.Raster('RGB.BRF.Angle.tif', path)
 angle.to_array(flatten=False)
 
 # Note, that the arrays were converted from a BRF into a BRDF (dB) in the previous step:
