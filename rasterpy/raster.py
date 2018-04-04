@@ -1204,11 +1204,16 @@ class Raster:
         Take a sequence of 1-D arrays and stack them as columns to make a single 2-D array.
         2-D arrays are stacked as-is, just like with numpy.hstack. 1-D arrays are turned into 2-D columns first.
 
-        Attributes
+        Parameters
         ----------
-        unfold : bool, optional
+         unfold : bool, optional
             If the arrays are multi dimensional this option extracts the individual dimension and stack it to an array.
             Default is False.
+
+        Attributes
+        ----------
+        stack : array_like
+            Stacked array.
 
         """
         try:
