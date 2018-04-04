@@ -28,186 +28,125 @@ def datadir(tmpdir, request):
     return getter
 
 
-info_dict1 = {'bands': 1,
-              'dim': 1,
-              'dtype': 'Int32',
-              'geotrandform': (12.203257905736805,
-                               0.00011352085570948134,
-                               0.0,
-                               50.90488135389295,
-                               0.0,
-                               -0.00010517297066314768),
-              'nodata': -99999,
-              'projection': 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]]',
-              'xmin': 12.203257905736805,
-              'xres': 0.00011352085570948134,
-              'ymin': 50.90488135389295,
-              'yres': -0.00010517297066314768}
+info_dict1 = {'bands': 3,
+              'dim': 3,
+              'dtype': 'Float32',
+              'geotrandform': (625680.0, 20.0, 0.0, 5693480.0, 0.0, -20.0),
+              'nodata': -99999.0,
+              'projection': 'PROJCS["WGS 84 / UTM zone 32N",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",9],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","32632"]]',
+              'xmin': 625680.0,
+              'xres': 20.0,
+              'ymin': 5693480.0,
+              'yres': -20.0}
 
-info_dict2 = {'bands': (1, 1),
-              'dim': (1, 1),
-              'dtype': ('Int32', 'Int32'),
-              'geotrandform': ((12.203257905736805,
-                                0.00011352085570948134,
-                                0.0,
-                                50.90488135389295,
-                                0.0,
-                                -0.00010517297066314768),
-                               (12.203257905736805,
-                                0.00011352085570948134,
-                                0.0,
-                                50.90488135389295,
-                                0.0,
-                                -0.00010517297066314768)),
-              'nodata': (-99999, -99999),
+info_dict2 = {'bands': (3, 3),
+              'dim': (3, 3),
+              'dtype': ('Float32', 'Float32'),
+              'geotrandform': ((625680.0, 20.0, 0.0, 5693480.0, 0.0, -20.0),
+                               (625680.0, 20.0, 0.0, 5693480.0, 0.0, -20.0)),
+              'nodata': (-99999.0, -99999.0),
               'projection': (
-                  'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]]',
-                  'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]]'),
-              'xmin': (12.203257905736805, 12.203257905736805),
-              'xres': (0.00011352085570948134, 0.00011352085570948134),
-              'ymin': (50.90488135389295, 50.90488135389295),
-              'yres': (-0.00010517297066314768, -0.00010517297066314768)}
+              'PROJCS["WGS 84 / UTM zone 32N",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",9],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","32632"]]',
+              'PROJCS["WGS 84 / UTM zone 32N",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",9],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","32632"]]'),
+              'xmin': (625680.0, 625680.0),
+              'xres': (20.0, 20.0),
+              'ymin': (5693480.0, 5693480.0),
+              'yres': (-20.0, -20.0)}
 
 
 class TestImport:
     def test_import_one(self, datadir):
-        file1 = datadir('test_file_1.tif')
+        file1 = datadir('RGB.BRDF.tif')
         ras = rpy.Raster(file1, path=None)
 
         assert ras.info == info_dict1
 
     def test_import_tuple(self, datadir):
-        file1 = datadir('test_file_1.tif')
-        file2 = datadir('test_file_2.tif')
+        file1 = datadir('RGB.BRDF.tif')
+        file2 = datadir('RGB.BRDF.tif')
         files = (file1, file2)
         ras = rpy.Raster(files, path=None)
 
         assert ras.info == info_dict2
 
     def test_no_data(self, datadir):
-        file1 = datadir('test_file_1.tif')
+        file1 = datadir('RGB.BRDF.tif')
         ras = rpy.Raster(file1, path=None)
         ras.to_array()
         ras.set_nodata(0)
 
         assert ras.nodata == 0
 
-class TestArray:
-    def test_array_one(self, datadir):
-        file1 = datadir('test_file_1.tif')
-        ras = rpy.Raster(file1, path=None)
-        ras.to_array(band=1)
-        assert ras.array[0] == 117
-        assert ras.array[-1] == 112
-        assert ras.array.ndim == 1
-        assert ras.array.size == 1500
-
-    def test_array_two(self, datadir):
-        file1 = datadir('test_file_1.tif')
-        file2 = datadir('test_file_2.tif')
-        files = (file1, file2)
-        ras = rpy.Raster(files, path=None)
-        ras.to_array(band=1)
-        assert ras.array[0][0] == 117
-        assert ras.array[1][0] == 147
-
 
 class TestRaiseOne:
     def test_reshape(self, datadir):
-        file1 = datadir('test_file_1.tif')
+        file1 = datadir('RGB.BRDF.tif')
         ras = rpy.Raster(file1, path=None)
         with pytest.raises(AssertionError):
             ras.reshape()
 
     def test_flatten(self, datadir):
-        file1 = datadir('test_file_1.tif')
+        file1 = datadir('RGB.BRDF.tif')
         ras = rpy.Raster(file1, path=None)
         with pytest.raises(AssertionError):
             ras.flatten()
 
     def test_set_nodata(self, datadir):
-        file1 = datadir('test_file_1.tif')
+        file1 = datadir('RGB.BRDF.tif')
         ras = rpy.Raster(file1, path=None)
         with pytest.raises(AssertionError):
             ras.set_nodata(-99999)
 
-    # def test_write(self, datadir):
-    #     file1 = datadir('test_file_1.tif')
-    #     ras = rpy.Raster(file1, path=None)
-    #     ras.to_array()
-    #     with pytest.raises(AssertionError):
-    #         ras.write(ras.array, 'test')
-
     def test_convert(self, datadir):
-        file1 = datadir('test_file_1.tif')
+        file1 = datadir('RGB.BRDF.tif')
         ras = rpy.Raster(file1, path=None)
         with pytest.raises(AssertionError):
             ras.convert()
 
     def test_dstack2(self, datadir):
-        file1 = datadir('test_file_1.tif')
+        file1 = datadir('RGB.BRDF.tif')
         ras = rpy.Raster(file1, path=None)
         with pytest.raises(AssertionError):
-            ras.dstack2()
+            ras.dstack()
 
-    def test_dstack3(self, datadir):
-        file1 = datadir('test_file_1.tif')
-        ras = rpy.Raster(file1, path=None)
-        with pytest.raises(AssertionError):
-            ras.dstack3()
 
 class TestRaiseTuple:
     def test_reshape(self, datadir):
-        file1 = datadir('test_file_1.tif')
-        file2 = datadir('test_file_2.tif')
+        file1 = datadir('RGB.BRDF.tif')
+        file2 = datadir('RGB.BRDF.tif')
         files = (file1, file2)
         ras = rpy.Raster(files, path=None)
         with pytest.raises(AssertionError):
             ras.reshape()
 
     def test_flatten(self, datadir):
-        file1 = datadir('test_file_1.tif')
-        file2 = datadir('test_file_2.tif')
+        file1 = datadir('RGB.BRDF.tif')
+        file2 = datadir('RGB.BRDF.tif')
         files = (file1, file2)
         ras = rpy.Raster(files, path=None)
         with pytest.raises(AssertionError):
             ras.flatten()
 
     def test_set_nodata(self, datadir):
-        file1 = datadir('test_file_1.tif')
-        file2 = datadir('test_file_2.tif')
+        file1 = datadir('RGB.BRDF.tif')
+        file2 = datadir('RGB.BRDF.tif')
         files = (file1, file2)
         ras = rpy.Raster(files, path=None)
         with pytest.raises(AssertionError):
             ras.set_nodata(-99999)
 
-    # def test_write(self, datadir):
-    #     file1 = datadir('test_file_1.tif')
-    #     ras = rpy.Raster(file1, path=None)
-    #     ras.to_array()
-    #     with pytest.raises(AssertionError):
-    #         ras.write(ras.array, 'test')
-
     def test_convert(self, datadir):
-        file1 = datadir('test_file_1.tif')
-        file2 = datadir('test_file_2.tif')
+        file1 = datadir('RGB.BRDF.tif')
+        file2 = datadir('RGB.BRDF.tif')
         files = (file1, file2)
         ras = rpy.Raster(files, path=None)
         with pytest.raises(AssertionError):
             ras.convert()
 
     def test_dstack2(self, datadir):
-        file1 = datadir('test_file_1.tif')
-        file2 = datadir('test_file_2.tif')
+        file1 = datadir('RGB.BRDF.tif')
+        file2 = datadir('RGB.BRDF.tif')
         files = (file1, file2)
         ras = rpy.Raster(files, path=None)
         with pytest.raises(AssertionError):
-            ras.dstack2()
-
-    def test_dstack3(self, datadir):
-        file1 = datadir('test_file_1.tif')
-        file2 = datadir('test_file_2.tif')
-        files = (file1, file2)
-        ras = rpy.Raster(files, path=None)
-        with pytest.raises(AssertionError):
-            ras.dstack3()
+            ras.dstack()
