@@ -38,7 +38,12 @@ Rasterpy contains basic routines to read and write raster files with python. Wit
 * **'.hdr'**: All ENVI formats like `.bin` and `.hdr` formats. This is usefull if you want to read data from third-party software like Polsarpro. 
 
 # Installation
-There are currently one method to install `rasterpy`.
+There are currently different methods to install `rasterpy`.
+
+### Using pip
+The ` rasterpy ` package is provided on pip. You can install it with::
+
+    pip install rasterpy
     
 ### Standard Python
 You can also download the source code package from this repository or from pip. Unpack the file you obtained into some directory (it can be a temporary directory) and then run::
@@ -46,7 +51,7 @@ You can also download the source code package from this repository or from pip. 
     python setup.py install
   
 ### Test installation success
-Independent how you installed ` pyrism `, you should test that it was sucessfull by the following tests::
+Independent how you installed ` rasterpy `, you should test that it was sucessfull by the following tests::
 
     python -c "from rasterpy import Raster"
 
