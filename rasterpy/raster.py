@@ -315,11 +315,11 @@ class Raster:
 
             elif band is 'all':
                 images = []
-                for i in range(len(self.bands)):
+                for i in srange(len(self.bands)):
                     image = np.zeros((self.bands[i], self.rows[i], self.cols[i]),
                                      dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype[i]))
 
-                    for b in range(self.bands[i]):
+                    for b in srange(self.bands[i]):
                         # Remember, GDAL index is on 1, but Python is on 0 -- so we add 1 for our GDAL calls
                         band_ = self.raster[i].GetRasterBand(b + 1)
 
@@ -342,11 +342,11 @@ class Raster:
 
                 if flatten:
                     images = []
-                    for i in range(len(self.bands)):
+                    for i in srange(len(self.bands)):
                         image = np.zeros((self.bands[i], self.array[i][0].size,),
                                          dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype[i]))
 
-                        for b in range(self.bands[i]):
+                        for b in srange(self.bands[i]):
                             image[b] = self.array[i][b].flatten()
 
                         images.append(image.flatten() if self.bands[i] == 1 else image)
@@ -380,7 +380,7 @@ class Raster:
                 image = np.zeros((self.bands, self.rows, self.cols),
                                  dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype))
 
-                for b in range(self.bands):
+                for b in srange(self.bands):
                     # Remember, GDAL index is on 1, but Python is on 0 -- so we add 1 for our GDAL calls
                     band_ = self.raster.GetRasterBand(b + 1)
 
@@ -399,7 +399,7 @@ class Raster:
                     image = np.zeros((self.bands, self.array[0].size,),
                                      dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype))
 
-                    for b in range(self.bands):
+                    for b in srange(self.bands):
                         image[b] = self.array[b].flatten()
 
                     self.array = image.flatten() if self.bands == 1 else image
@@ -472,7 +472,7 @@ class Raster:
                     image = np.zeros((self.bands[i], self.array[i][0].size,),
                                      dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype[i]))
 
-                    for b in range(self.bands[i]):
+                    for b in srange(self.bands[i]):
                         image[b] = self.array[i][b].flatten()
 
                     images.append(image)
@@ -487,7 +487,7 @@ class Raster:
                 image = np.zeros((self.bands, self.array[0].size,),
                                  dtype=gdal_array.GDALTypeCodeToNumericTypeCode(self.dtype))
 
-                for b in range(self.bands):
+                for b in srange(self.bands):
                     image[b] = self.array[b].flatten()
 
                 self.array = image
@@ -514,7 +514,7 @@ class Raster:
 
         if isinstance(self.raster, tuple):
             nodata_list = []
-            for i in range(len(self.array)):
+            for i in srange(len(self.array)):
                 nodata_list.append(nodata)
 
             self.nodata = tuple(nodata_list)
@@ -687,7 +687,7 @@ class Raster:
 
                 outds = outdriver.Create(filename, cols, rows, ndim, gdal_dtype)
 
-                for i in range(ndim):
+                for i in srange(ndim):
                     post_1 = self.xres[reference] if isinstance(self.xres, tuple) else self.xres
                     post_2 = self.yres[reference] if isinstance(self.yres, tuple) else self.yres
                     outds.SetGeoTransform([origin_x, post_1, 0.0, origin_y, 0.0, post_2])
