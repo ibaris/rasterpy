@@ -9,7 +9,7 @@ At first import rasterpy.
 
 After that we define a path where our test tif file is located.
 .. ::
-    path = "C:\Users\ibari\Dropbox\GitHub\\rasterpy\\tests\data"
+    path = ".\\rasterpy\\tests\data"
 
 Then we open the grid and read it to an multidimensional array:
 .. ::
