@@ -21,7 +21,7 @@ class Raster:
     Parameters
     ----------
     filename : str or tuple, optional
-        Filename as string or a tuple with filename of the raster data.
+        Filename as a string or a tuple with filenames of the raster data.
     path : str, optional
         Path to raster data. If path is None the path will set to current
         directory with os.getwd().
@@ -33,7 +33,6 @@ class Raster:
 
     Attributes
     ----------
-    All returns are attributes!
     raster : osgeo.gdal.Dataset
         Contains the gdal data set for the raster files.
     cols, rows : int or tuple
@@ -257,10 +256,28 @@ class Raster:
 
         return data
 
+    def copy(self):
+        """
+        Copy the imported array.
+
+        Returns
+        -------
+        copy : array_like or tuple
+            A copy of Raster.array attribute.
+
+        """
+        try:
+            self.array
+        except AttributeError:
+            raise AssertionError(
+                "Before you can copy a array you must convert the raster files to an array with Raster.to_array().")
+
+        return self.array
+
     def to_array(self, band='all', flatten=True, quantification_factor=1):
         """
         Converts a binary file of ENVI or PolSARpro or a tif to a numpy
-        array. Lack of an ENVI .hdr file will cause this to crash.
+        array.
 
         Parameters
         ----------
@@ -287,7 +304,7 @@ class Raster:
                                        band_, self.cols, self.rows))
 
                 if quantification_factor > 1:
-                    self.array = tuple(map(lambda array: array.astype(np.float32)/quantification_factor), self.array)
+                    self.array = tuple(map(lambda array: array.astype(np.float32) / quantification_factor), self.array)
 
                 else:
                     pass
@@ -330,7 +347,7 @@ class Raster:
                     else:
                         pass
 
-                    image[np.isnan(image)] = self.nodata
+                    image[np.isnan(image)] = self.nodata[i]
 
                     images.append(image)
 
@@ -355,7 +372,7 @@ class Raster:
                 self.array = band_.ReadAsArray(0, 0, self.cols, self.rows)
 
                 if quantification_factor > 1:
-                    self.array = self.array.astype(np.float32)/quantification_factor
+                    self.array = self.array.astype(np.float32) / quantification_factor
                 else:
                     pass
 
@@ -385,7 +402,7 @@ class Raster:
                     #     image[b] = self.__subset(x=subset_x, y=subset_y)
 
                 if quantification_factor > 1:
-                    self.array = image.astype(np.float32)/quantification_factor
+                    self.array = image.astype(np.float32) / quantification_factor
                 else:
                     self.array = image
 
@@ -488,12 +505,12 @@ class Raster:
 
     def set_nodata(self, nodata):
         """
-        Set and assign new no data value.
+        Set and assign a new no data value.
 
         Parameters
         ----------
         nodata : int, float or np.nan
-            New no data value
+            New no data value. A tuple with in, float or np.nan is also possible if you imported more than one file.
 
         Returns
         -------
@@ -521,27 +538,22 @@ class Raster:
             self.array[np.isnan(self.array)] = self.nodata
             self.array[np.where(self.array[0] == 0)] = self.nodata
 
-    def write(self, data, filename, path=None, export='all', band=1, reference=0):
+    def write(self, data, filename, path=None, reference=0):
         """
         Convert an array into a binary (.bin) file with header (.hdr) or a Tif file.
 
         Parameters
         ----------
-        data : array_like or tuple with array_like
+        data : array_like or tuple
             Arrays you want to export.
-        filename : str or tuple with str
+        filename : str or tuple
             File names of the exported arrays. Supported file extension are '.tif' or '.bin'
         path : str, optional
             Export path. If path is None the path will set to current
             directory with os.getwd().
-        export : int or 'all', optional
-            If data is tuple instance you can specify which tuple item you want to export. If 'all' (default) all items
-            will be exported. In this case filename must have the same len as data.
-        band : int
-            Write the data in a specific band.
         reference :
             If the Raster import contains several grids, you can specify which of these grids you want to use as
-            reference for geospatial information (default=0).
+            reference for geo-spatial information (default=0).
 
         Returns
         -------
@@ -553,92 +565,58 @@ class Raster:
             pass
 
         if isinstance(data, tuple):
-            if export == 'all':
-                if not isinstance(filename, tuple) or len(filename) != len(data):
-                    raise AssertionError(
-                        "If you want to export all arrays you need as much as filnames in a tuple as arrays.")
+            if not isinstance(filename, tuple) or len(filename) != len(data):
+                raise AssertionError(
+                    "If you want to export all arrays you need as much as filnames in a tuple as arrays.")
 
-                for i in srange(len(data)):
-                    data_ = data[i]
-                    if data_.ndim <= 1:
-                        raise AssertionError("Only 2 dimensional array can be converted into a .tiff file.")
+            for i in srange(len(data)):
+                data_ = data[i]
+                if data_.ndim <= 1:
+                    raise AssertionError("Only 2 dimensional array can be converted into a .tiff file.")
 
-                    elif data_.ndim == 2:
-                        rows, cols = data_.shape
-                        bands = band
-                        gdal_dtype = self.__TYPEMAP[data_.dtype.name]
-                        origin_x = self.xmin[reference] if isinstance(self.xmin, tuple) else self.xmin
-                        origin_y = self.ymin[reference] if isinstance(self.ymin, tuple) else self.ymin
+                if data_.ndim == 2:
+                    rows, cols = data_.shape
+                    ndim = 1
 
-                        filename_temp = filename[i].split('.')
+                else:
+                    ndim, rows, cols = data_.shape
 
-                        if filename_temp[-1] == 'tif' or filename_temp[-1] == 'tiff':
-                            outdriver = gdal.GetDriverByName("GTiff")
-                        elif filename_temp[-1] == 'bin':
-                            outdriver = gdal.GetDriverByName('ENVI')
-                        else:
-                            raise AssertionError(
-                                "File extension must be `tif`, `tiff` or `bin`. The actual extension is {0}".format(
-                                    str(filename_temp[-1])))
+                gdal_dtype = self.__TYPEMAP[data_.dtype.name]
+                origin_x = self.xmin[reference] if isinstance(self.xmin, tuple) else self.xmin
+                origin_y = self.ymin[reference] if isinstance(self.ymin, tuple) else self.ymin
 
-                        outds = outdriver.Create(filename[i], cols, rows, bands, gdal_dtype)
+                filename_temp = filename[i].split('.')
 
-                        post_1 = self.xres[reference] if isinstance(self.xres, tuple) else self.xres
-                        post_2 = self.yres[reference] if isinstance(self.yres, tuple) else self.yres
-                        outds.SetGeoTransform([origin_x, post_1, 0.0, origin_y, 0.0, post_2])
-
-                        outds.SetProjection(
-                            self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
-
-                        out_band = outds.GetRasterBand(band)
-                        out_band.WriteArray(data_)
-                        out_band.SetNoDataValue(
-                            self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
-
-
-                    else:
-                        pass
-            else:
-                filename_temp = filename.split('.')
-
-                if filename_temp[-1] == 'tif':
+                if filename_temp[-1] == 'tif' or filename_temp[-1] == 'tiff':
                     outdriver = gdal.GetDriverByName("GTiff")
                 elif filename_temp[-1] == 'bin':
                     outdriver = gdal.GetDriverByName('ENVI')
                 else:
                     raise AssertionError(
-                        "File extension must be `tif` or `bin`. The actual extension is {0}".format(
+                        "File extension must be `tif`, `tiff` or `bin`. The actual extension is {0}".format(
                             str(filename_temp[-1])))
 
-                data = data[export]
+                outds = outdriver.Create(filename[i], cols, rows, ndim, gdal_dtype)
 
-                if data.ndim <= 1:
-                    raise AssertionError("Only 2 dimensional array can be converted into a .tiff file.")
+                for j in srange(ndim):
+                    post_1 = self.xres[reference] if isinstance(self.xres, tuple) else self.xres
+                    post_2 = self.yres[reference] if isinstance(self.yres, tuple) else self.yres
+                    outds.SetGeoTransform([origin_x, post_1, 0.0, origin_y, 0.0, post_2])
 
-                rows, cols = data.shape
-                bands = band
-                gdal_dtype = self.__TYPEMAP[data.dtype.name]
-                origin_x = self.xmin[reference] if isinstance(self.xmin, tuple) else self.xmin
-                origin_y = self.ymin[reference] if isinstance(self.ymin, tuple) else self.ymin
+                    outds.SetProjection(
+                        self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
 
-                outds = outdriver.Create(filename, cols, rows, bands, gdal_dtype)
-
-                post_1 = self.xres[reference] if isinstance(self.xres, tuple) else self.xres
-                post_2 = self.yres[reference] if isinstance(self.yres, tuple) else self.yres
-                outds.SetGeoTransform([origin_x, post_1, 0.0, origin_y, 0.0, post_2])
-
-                outds.SetProjection(
-                    self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
-
-                out_band = outds.GetRasterBand(band)
-                out_band.WriteArray(data)
-                out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
-
+                    out_band = outds.GetRasterBand(j + 1)
+                    if data_.ndim > 2:
+                        out_band.WriteArray(data_[j])
+                    else:
+                        out_band.WriteArray(data_)
+                    out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
 
         else:
             filename_temp = filename.split('.')
 
-            if filename_temp[-1] == 'tif':
+            if filename_temp[-1] == 'tif' or filename_temp[-1] == 'tiff':
                 outdriver = gdal.GetDriverByName("GTiff")
             elif filename_temp[-1] == 'bin':
                 outdriver = gdal.GetDriverByName('ENVI')
@@ -649,47 +627,33 @@ class Raster:
             if data.ndim <= 1:
                 raise AssertionError("Only 2 dimensional array can be converted into a .tiff file.")
 
+            # if export != 'all':
             if data.ndim == 2:
                 rows, cols = data.shape
-                bands = band
-                gdal_dtype = self.__TYPEMAP[data.dtype.name]
-                origin_x = self.xmin[reference] if isinstance(self.xmin, tuple) else self.xmin
-                origin_y = self.ymin[reference] if isinstance(self.ymin, tuple) else self.ymin
+                ndim = 1
+            else:
+                ndim, rows, cols = data.shape
 
-                outds = outdriver.Create(filename, cols, rows, bands, gdal_dtype)
+            gdal_dtype = self.__TYPEMAP[data.dtype.name]
+            origin_x = self.xmin[reference] if isinstance(self.xmin, tuple) else self.xmin
+            origin_y = self.ymin[reference] if isinstance(self.ymin, tuple) else self.ymin
 
+            outds = outdriver.Create(filename, cols, rows, ndim, gdal_dtype)
+
+            for i in srange(ndim):
                 post_1 = self.xres[reference] if isinstance(self.xres, tuple) else self.xres
                 post_2 = self.yres[reference] if isinstance(self.yres, tuple) else self.yres
                 outds.SetGeoTransform([origin_x, post_1, 0.0, origin_y, 0.0, post_2])
 
-                outds.SetProjection(self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
+                outds.SetProjection(
+                    self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
 
-                out_band = outds.GetRasterBand(band)
-                out_band.WriteArray(data)
-                out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
-
-
-            else:
-                ndim, rows, cols = data.shape
-                bands = band
-                gdal_dtype = self.__TYPEMAP[data.dtype.name]
-                origin_x = self.xmin[reference] if isinstance(self.xmin, tuple) else self.xmin
-                origin_y = self.ymin[reference] if isinstance(self.ymin, tuple) else self.ymin
-
-                outds = outdriver.Create(filename, cols, rows, ndim, gdal_dtype)
-
-                for i in srange(ndim):
-                    post_1 = self.xres[reference] if isinstance(self.xres, tuple) else self.xres
-                    post_2 = self.yres[reference] if isinstance(self.yres, tuple) else self.yres
-                    outds.SetGeoTransform([origin_x, post_1, 0.0, origin_y, 0.0, post_2])
-
-                    outds.SetProjection(
-                        self.projection[reference] if isinstance(self.projection, tuple) else self.projection)
-
-                    out_band = outds.GetRasterBand(i+1)
+                out_band = outds.GetRasterBand(i + 1)
+                if data.ndim > 2:
                     out_band.WriteArray(data[i])
-                    out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
-
+                else:
+                    out_band.WriteArray(data)
+                out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
 
     @staticmethod
     def dB(x):
@@ -710,10 +674,6 @@ class Raster:
     def BRDF(BSC, iza, vza, angle_unit='RAD'):
         """
         Convert a Radar Backscatter Coefficient (BSC) into a BRDF.
-
-        Note
-        -----
-        Hot spot direction is vza == iza and raa = 0.0
 
         Parameters
         ----------
@@ -748,10 +708,6 @@ class Raster:
         """
         Convert a BRDF into a BRF.
 
-        Note
-        -----
-        Hot spot direction is vza == iza and raa = 0.0
-
         Parameters
         ----------
         BRDF : int, float or array_like
@@ -768,10 +724,6 @@ class Raster:
     def BSC(BRDF, iza, vza, angle_unit='RAD'):
         """
         Convert a BRDF in to a Radar Backscatter Coefficient (BSC).
-
-        Note
-        -----
-        Hot spot direction is vza == iza and raa = 0.0
 
         Parameters
         ----------
@@ -809,21 +761,19 @@ class Raster:
         Parameters
         ----------
         system : {'BSC', 'BRDF', 'BRF'}
-            The actual unit of the data.
+            The actual unit of the data. Default is 'BSC'.
         to : {'BSC', 'BRDF', 'BRF'}
-            The desired unit after conversion.
-        system_unit : {'linear', 'dB'}
-            Are the measurements in a linear scale or in decibel?
-        output_unit :  {'linear', 'dB'}
-            The desired output format.
-        iza : int, float or array_like
-            Sun or incidence zenith angle.
-
-        vza : int, float or array_like
+            The desired unit after conversion. Default is 'BRDF'
+        system_unit : {'linear', 'dB'}, optional
+            Are the measurements in a linear scale or in decibel? Default is 'linear'.
+        output_unit :  {'linear', 'dB'}, optional
+            The desired output format. Default is 'linear'.
+        iza : int, float, array_like or None, , optional
+            Sun or incidence zenith angle. Default is None.
+        vza : int, float, array_like or None, optional
             View or scattering zenith angle.
-
-        angle_unit : {'DEG', 'RAD'} (default = 'RAD'), optional
-            * 'DEG': All input angles (iza, vza, raa) are in [DEG].
+        angle_unit : {'DEG', 'RAD'}, optional
+            * 'DEG': All input angles (iza, vza, raa) are in [DEG] (default).
             * 'RAD': All input angles (iza, vza, raa) are in [RAD].
 
         Returns
@@ -1188,7 +1138,7 @@ class Raster:
                     if system_unit is 'linear':
 
                         if output_unit is 'linear':
-                            self.array = self.array/np.pi
+                            self.array = self.array / np.pi
                             self.array = Raster.BSC(self.array, iza, vza, angle_unit)
 
                         elif output_unit is 'dB':
@@ -1224,7 +1174,7 @@ class Raster:
                     if system_unit is 'linear':
 
                         if output_unit is 'linear':
-                            self.array = self.array/np.pi
+                            self.array = self.array / np.pi
 
                         elif output_unit is 'dB':
                             self.array = self.array / np.pi
@@ -1252,7 +1202,7 @@ class Raster:
                     else:
                         raise AssertionError("System unit must be 'linear' or 'dB'")
 
-    def dstack2(self):
+    def dstack(self, unfold=False):
         """
         Stack 1-D arrays as columns into a 2-D array.
         Take a sequence of 1-D arrays and stack them as columns to make a single 2-D array.
@@ -1260,8 +1210,9 @@ class Raster:
 
         Attributes
         ----------
-        stack : array_like
-            The array formed by stacking the given arrays.
+        unfold : bool, optional
+            If the arrays are multi dimensional this option extracts the individual dimension and stack it to an array.
+            Default is False.
 
         """
         try:
@@ -1270,57 +1221,60 @@ class Raster:
             raise AssertionError(
                 "Before you can convert you must convert the data to an array with Raster.to_array().")
 
-        if not isinstance(self.raster, tuple):
-            raise AssertionError("You need more than one array to build a stack.")
+        if unfold is False:
+            if not isinstance(self.raster, tuple):
+                raise AssertionError("You need more than one array to build a stack.")
 
-        self.stack = np.column_stack(self.array)
+            self.stack = np.column_stack(self.array)
 
-    def dstack3(self):
-        try:
-            self.array
-        except AttributeError:
-            raise AssertionError(
-                "Before you can convert you must convert the data to an array with Raster.to_array().")
+        else:
+            if not isinstance(self.raster, tuple):
+                if self.bands < 2:
+                    raise AssertionError("You need more than one dimension to build a folded stack.")
 
-        try:
-            if self.stack.ndim >= 3:
-                self.dstack2()
-                x = self.stack
+                elif self.array.ndim >= 3:
+                    self.flatten()
+
+                else:
+                    array_list = []
+                    for i in srange(self.bands):
+                        array_list.append(self.array[i])
+
+                    array = tuple(array_list)
+
+                    self.stack = np.column_stack(array)
 
             else:
-                x = self.stack
+                band_list = []
+                for i in srange(len(self.bands)):
+
+                    if self.bands[i] < 2:
+                        raise AssertionError("You need more than one dimension to build a folded stack.")
+
+                    elif self.array[i].ndim >= 3:
+                        self.flatten()
+
+                    else:
+                        array_list = []
+                        for j in srange(self.bands[i]):
+                            array_list.append(self.array[i][j])
+
+                        array_stack = np.column_stack(tuple(array_list))
+
+                        band_list.append(array_stack)
+
+                self.stack = tuple(band_list)
+
+    def reset(self):
+        """
+        Delete the attributes Raster.array and Raster.stack
+        """
+        try:
+            del self.array
         except AttributeError:
-            self.dstack2()
-            x = self.stack
+            pass
 
-        agg_num, hop = len(self.array), len(self.array)
-
-        # Pad to at least one block.
-        len_x, n_in = x.shape
-        if len_x < agg_num:  # not in get_matrix_data
-            x = np.concatenate((x, np.zeros((agg_num - len_x, n_in))))
-
-        # main 2d to 3d.
-        len_x = len(x)
-        i1 = 0
-        x3d = []
-        while i1 + agg_num <= len_x:
-            x3d.append(x[i1: i1 + agg_num])
-            i1 += hop
-
-        self.stack = np.array(x3d)
-
-    def stack_bands(self, data):
-        """
-
-        Parameters
-        ----------
-        data : tuple
-
-        Returns
-        -------
-        Array : array_like
-            Multi dimensional array.
-        """
-
-        pass
+        try:
+            del self.stack
+        except AttributeError:
+            pass
