@@ -1,8 +1,8 @@
 Raster Stack
 ------------
 Here is an example of some basic stack features that rasterpy provides. Three bands of angle information are read from an image.
-The first band is the inclination(iza), the second band the viewing (vza) and the last band is the relative azimuth (raa) angle.
-Then we stack these bands together in an new array.
+The first band is the inclination (iza), the second band the viewing (vza) and the last band is the relative azimuth (raa) angle.
+Then we stack these bands together in a new array.
 
 At first import rasterpy.
 .. ::
