@@ -212,15 +212,15 @@ After that we can write the converted data as a multi band tiff:
 grid.write(data=grid.array, filename='RGB.BRDF.tif', path=path)
 ```
 
-We can also convert the arrays from a BRF or BRDF into Backscatter coefficients (BSC). For this we need the inclination (iza) and viewing (vza) angles:
+We can also convert the arrays from a BRF or BRDF into Backscatter coefficients (BSC). For this we need the inclination (iza) and viewing (vza) angles. These information is in the first two bands of the dataset. Thus, we specify it with parameter `band=(1, 2)`:
 ```python
 angle = rpy.Raster('RGB.BRF.Angle.tif')
-angle.to_array(flatten=False)
+angle.to_array(band=(1, 2), flatten=False)
 ```
 
 Note, that the arrays were converted from a BRF into a BRDF (dB) in the previous step:
 ```python
-grid.convert(system='BRDF', to='BSC', system_unit='dB', output_unit='dB', iza=angle.array[0], vza=angle.array[2])
+grid.convert(system='BRDF', to='BSC', system_unit='dB', output_unit='dB', iza=angle.array[0], vza=angle.array[1])
 ```
 
 ```python
