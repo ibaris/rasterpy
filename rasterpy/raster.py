@@ -118,7 +118,6 @@ class Raster:
             self.raster = inds
 
             for i in srange(len(inds)):
-                print ("Loading file {0}".format(str(self.filename[i])))
                 if inds[i] is None:
                     raise IOError(
                         "Couldn't open file {0}. Perhaps you need an .hdr file?".format(str(self.filename[i])))
@@ -178,7 +177,6 @@ class Raster:
             inds = gdal.Open(self.filename, GA_ReadOnly)
             self.raster = inds
 
-            print ("Loading file {0}".format(str(self.filename)))
             if inds is None:
                 raise IOError(
                     "Couldn't open file {0}. Perhaps you need an .hdr file?".format(str(self.filename)))
@@ -310,8 +308,6 @@ class Raster:
 
                     self.array = tuple(array)
 
-                for item in self.filename:
-                    print ("File {0} opened successfully".format(str(item)))
 
             elif band is 'all':
                 images = []
@@ -372,8 +368,6 @@ class Raster:
 
                 if flatten:
                     self.array = self.array.flatten()
-
-                print ("File {0} opened successfully".format(str(self.filename)))
 
             elif band is 'all':
 
@@ -601,7 +595,6 @@ class Raster:
                         out_band.SetNoDataValue(
                             self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
 
-                        print ("File {0} converted successfully".format(str(filename[i])))
 
                     else:
                         pass
@@ -641,7 +634,6 @@ class Raster:
                 out_band.WriteArray(data)
                 out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
 
-                print ("File {0} converted successfully".format(str(filename)))
 
         else:
             filename_temp = filename.split('.')
@@ -676,7 +668,6 @@ class Raster:
                 out_band.WriteArray(data)
                 out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
 
-                print ("File {0} converted successfully".format(str(filename)))
 
             else:
                 ndim, rows, cols = data.shape
@@ -699,7 +690,6 @@ class Raster:
                     out_band.WriteArray(data[i])
                     out_band.SetNoDataValue(self.nodata[reference] if isinstance(self.nodata, tuple) else self.nodata)
 
-                print ("File {0} converted successfully".format(str(filename)))
 
     @staticmethod
     def dB(x):
