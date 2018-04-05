@@ -35,7 +35,7 @@
 # Description
 Rasterpy contains basic routines to read and write raster files with python. 
 
-## Key Features
+### Key Features
 With Rasterpy one can read the following raster formats:
 * **'tif'**: All `.tiff` formats like GEOtiff etc.
 * **'.hdr'**: All ENVI formats like `.bin` and `.hdr` formats. This is usefull if you want to read data from third-party software like Polsarpro. 
