@@ -90,8 +90,8 @@ class Raster:
 
         else:
             if self.filename is None and extension is not None:
+                filename_list = []
                 for root, dirs, files in os.walk(gwd):
-                    filename_list = []
                     for file in files:
                         if file.endswith(extension):
                             filename_list.append(file)
