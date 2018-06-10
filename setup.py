@@ -17,7 +17,7 @@ def get_packages():
 
 setup(name='rasterpy',
 
-      version='0.0.2',
+      version='0.0.3',
 
       description='Read and write geospatial raster datasets',
 
