@@ -4,8 +4,9 @@ import os
 import sys
 
 import numpy as np
-from osgeo import (gdal, gdal_array, osr)
+from osgeo import (gdal, gdal_array, osr, ogr)
 from osgeo.gdalconst import GA_ReadOnly
+from .auxiliary import RasterResult
 
 # python 3.6 comparability
 if sys.version_info < (3, 0):
@@ -37,6 +38,8 @@ class Raster:
         Contains the gdal data set for the raster files.
     cols, rows : int or tuple
         Columns and row size of the imported raster files.
+    files : str
+        Filenames of each raster file.
     band : int or tuple
         Number of bands in each raster file.
     dim : list or tuple
@@ -51,11 +54,16 @@ class Raster:
         Resulution information in x and y axis.
     nodata :
         No data values.
-    info : dict
-        All information in a dictionary.
+    info : RasterResult
+        All information in a dictionary with point access.
+
+    See Also
+    --------
+    auxiliary.RasterResult
+
     """
 
-    def __init__(self, filename=None, path=None, extension=None, check_dim=True):
+    def __init__(self, filename=None, path=None, extension=None, check_dim=False):
 
         self.filename = filename
 
@@ -159,16 +167,17 @@ class Raster:
 
             self.nodata = tuple(self.nodata)
 
-            self.info = {'bands': self.bands,
-                         'dim': self.bands,
-                         'dtype': self.dtype,
-                         'projection': self.projection,
-                         'geotrandform': self.geotransform,
-                         'xmin': self.xmin,
-                         'ymin': self.ymin,
-                         'xres': self.xres,
-                         'yres': self.yres,
-                         'nodata': self.nodata}
+            self.info = RasterResult(files=self.filename,
+                                     bands=self.bands,
+                                     dim=self.dim,
+                                     dtype=self.dtype,
+                                     projection=self.projection,
+                                     geotrandform=self.geotransform,
+                                     xmin=self.xmin,
+                                     ymin=self.ymin,
+                                     xres=self.xres,
+                                     yres=self.yres,
+                                     nodata=self.nodata)
 
 
 
@@ -273,6 +282,144 @@ class Raster:
                 "Before you can copy a array you must convert the raster files to an array with Raster.to_array().")
 
         return self.array
+
+    def extract_point(self, shp, shp_id=None, file=None, band=None):
+        """
+        Extract raster values from point shape geometry.
+
+        Parameters
+        ----------
+        shp : str
+            Path to a shape file.
+        shp_id : str
+            Name of the ID column of the shape file. If None the ID is a continuous number.
+        file : int
+            If there are more than one raster file in scope you can define which element you want to extract. If None
+            all elements will be recognized.
+        band : int
+            You can define which band you want to extract. If None all bands will be recognized.
+
+        Returns
+        -------
+        list
+
+        """
+        shape = ogr.Open(shp)
+        layer = shape.GetLayer()
+
+        li_values = list()
+
+        if isinstance(self.raster, tuple):
+            if file is None:
+                temp_value = list()
+
+                for k in range(len(self.raster)):
+
+                    for j in range(len(layer)):
+
+                        feat = layer[j]
+
+                        geom = feat.GetGeometryRef()
+
+                        if shp_id is None:
+                            feat_id = j
+                        else:
+                            feat_id = feat.GetField(shp_id)
+
+                        mx, my = geom.GetX(), geom.GetY()
+
+                        px = int((mx - self.geotransform[k][0]) / self.geotransform[k][1])
+                        py = int((my - self.geotransform[k][3]) / self.geotransform[k][5])
+
+                        if band is None:
+                            values = np.zeros((1, self.bands[k]))
+
+                            for i in range(values.shape[1]):
+                                rb = self.raster[k].GetRasterBand(i + 1)
+                                intval = rb.ReadAsArray(px, py, 1, 1)
+
+                                values[0, i] = intval[0, 0]
+
+                        else:
+                            rb = self.raster.GetRasterBand(band)
+                            intval = rb.ReadAsArray(px, py, 1, 1)
+
+                            values = intval[0, 0]
+
+                        temp_value.append([feat_id, values])
+
+                    li_values.append(temp_value)
+
+            else:
+
+                for j in range(len(layer)):
+
+                    feat = layer[j]
+
+                    geom = feat.GetGeometryRef()
+
+                    if shp_id is None:
+                        feat_id = j
+                    else:
+                        feat_id = feat.GetField(shp_id)
+
+                    mx, my = geom.GetX(), geom.GetY()
+
+                    px = int((mx - self.geotransform[file][0]) / self.geotransform[file][1])
+                    py = int((my - self.geotransform[file][3]) / self.geotransform[file][5])
+
+                    if band is None:
+                        values = np.zeros((1, self.bands[file]))
+
+                        for i in range(values.shape[1]):
+                            rb = self.raster[file].GetRasterBand(i + 1)
+                            intval = rb.ReadAsArray(px, py, 1, 1)
+
+                            values[0, i] = intval[0, 0]
+
+                    else:
+                        rb = self.raster.GetRasterBand(band)
+                        intval = rb.ReadAsArray(px, py, 1, 1)
+
+                        values = intval[0, 0]
+
+                    li_values.append([feat_id, values])
+
+        else:
+            for j in range(len(layer)):
+
+                feat = layer[j]
+
+                geom = feat.GetGeometryRef()
+
+                if shp_id is None:
+                    feat_id = j
+                else:
+                    feat_id = feat.GetField(shp_id)
+
+                mx, my = geom.GetX(), geom.GetY()
+
+                px = int((mx - self.geotransform[0]) / self.geotransform[1])
+                py = int((my - self.geotransform[3]) / self.geotransform[5])
+
+                if band is None:
+                    values = np.zeros((1, self.bands))
+
+                    for i in range(values.shape[1]):
+                        rb = self.raster.GetRasterBand(i + 1)
+                        intval = rb.ReadAsArray(px, py, 1, 1)
+
+                        values[0, i] = intval[0, 0]
+
+                else:
+                    rb = self.raster.GetRasterBand(band)
+                    intval = rb.ReadAsArray(px, py, 1, 1)
+
+                    values = intval[0, 0]
+
+                li_values.append([feat_id, values])
+
+        return li_values
 
     def to_array(self, band=None, flatten=True, quantification_factor=1):
         """
