@@ -33,9 +33,16 @@
 </p>
 
 # Description
-Rasterpy contains basic routines to read and write raster files with python. With Rasterpy one can read the following raster formats:
+Rasterpy contains basic routines to read and write raster files with python. 
+
+### Key Features
+With Rasterpy one can read the following raster formats:
 * **'tif'**: All `.tiff` formats like GEOtiff etc.
 * **'.hdr'**: All ENVI formats like `.bin` and `.hdr` formats. This is usefull if you want to read data from third-party software like Polsarpro. 
+
+Moreover, these additional functions are integrated:
+* **Conversion**: Convert the files between a BRDF, BRF and BSC in linear or dB unit.
+* **Stacking**: Basic stacking routines.
 
 # Installation
 There are currently different methods to install `rasterpy`.
@@ -68,7 +75,7 @@ import numpy as np
 ```
 After that we define a path where our test tif file is located:
 ```python
-path = "C:\Users\ibari\Dropbox\GitHub\\rasterpy\\tests\data"
+path = ".\\rasterpy\\tests\data"
 ```
 
 Then we open the grid and read it to an multidimensional array:
@@ -145,7 +152,7 @@ import numpy as np
 
 After that we define a path where our test tif file is located.
 ```python
-path = "C:\Users\ibari\Dropbox\GitHub\\rasterpy\\tests\data"
+path = ".\\rasterpy\\tests\data"
 ```
 
 Then we open the grid and read it to an multidimensional array:
